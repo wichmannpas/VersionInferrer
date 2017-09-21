@@ -38,8 +38,11 @@ class GenericGitProvider(Provider):
         """
         Run a command within the cache directory and return its output as str.
         """
+        cwd = None
+        if os.path.isdir(self.cache_directory):
+            cwd = self.cache_directory
         return check_output(
-            command, cwd=self.cache_directory).decode()[:-1]
+            command, cwd=cwd).decode()[:-1]
 
     def _checkout(self, git_object: str):
         """Do a git checkout of specified git object."""
@@ -75,7 +78,10 @@ class GenericGitProvider(Provider):
         """
         Run a command within the cache directory and return its return code.
         """
-        return call(command, cwd=self.cache_directory)
+        cwd = None
+        if os.path.isdir(self.cache_directory):
+            cwd = self.cache_directory
+        return call(command, cwd=cwd)
 
 
 class GitCommitProvider(GenericGitProvider):
