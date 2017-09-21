@@ -13,4 +13,5 @@ class Wordpress(SoftwareDefinition):
     )
     path_map = {
         '/': '/',
+        '/': '/',
     }

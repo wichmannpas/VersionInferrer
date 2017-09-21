@@ -7,6 +7,7 @@ from backends.backend import Backend, BackendException
 from backends.model import Model
 from backends.software_package import SoftwarePackage
 from backends.software_version import SoftwareVersion
+from backends.static_file import StaticFile
 
 
 class SqliteBackend(Backend):
@@ -42,7 +43,7 @@ class SqliteBackend(Backend):
             ''', (software_package_id,))
 
             return set(SoftwareVersion(software_package, row[0])
-                    for row in cursor.fetchall())
+                       for row in cursor.fetchall())
 
     def store(self, element: Model) -> bool:
         """
@@ -99,6 +100,49 @@ class SqliteBackend(Backend):
                     ?)
                 ''', (software_package_id, element.identifier))
                 return True
+        elif isinstance(element, StaticFile):
+            software_version_id = self._get_id(
+                element.software_version)
+            if software_version_id is None:
+                # Software version not yet stored.
+                self.store(element.software_version)
+                software_version_id = self._get_id(
+                    element.software_version)
+            with closing(self._connection.cursor()) as cursor:
+                # Check whether element exists
+                cursor.execute('''
+                SELECT
+                    COUNT(*)
+                FROM static_file
+                WHERE
+                    software_version_id=? AND
+                    src_path=? AND
+                    webroot_path=?
+                ''', (software_version_id, element.src_path, element.webroot_path))
+
+                if cursor.fetchone()[0]:
+                    # static file exists already
+                    return False
+
+                # Insert new element
+                cursor.execute('''
+                INSERT
+                INTO static_file (
+                    software_version_id,
+                    src_path,
+                    webroot_path,
+                    checksum)
+                VALUES (
+                    ?,
+                    ?,
+                    ?,
+                    ?)
+                ''', (
+                    software_version_id,
+                    element.src_path,
+                    element.webroot_path,
+                    element.checksum))
+                return True
         raise BackendException('unsupported model type')
 
     def _get_id(self, element: Model) -> Union[int, None]:
@@ -112,6 +156,20 @@ class SqliteBackend(Backend):
                     name=? AND
                     vendor=?
                 ''', (element.name, element.vendor))
+                row = cursor.fetchone()
+                return row[0] if row is not None else None
+        if isinstance(element, SoftwareVersion):
+            software_package_id = self._get_id(element.software_package)
+            if software_package_id is None:
+                return None
+            with closing(self._connection.cursor()) as cursor:
+                cursor.execute('''
+                SELECT id
+                FROM software_version
+                WHERE
+                    software_package_id=? AND
+                    identifier=?
+                ''', (software_package_id, element.identifier))
                 row = cursor.fetchone()
                 return row[0] if row is not None else None
         raise BackendException('unsupported model type for id lookup')
@@ -130,10 +188,20 @@ class SqliteBackend(Backend):
             ''')
             cursor.execute('''
             CREATE TABLE IF NOT EXISTS software_version (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 software_package_id INTEGER NOT NULL,
                 identifier TEXT NOT NULL,
-                PRIMARY KEY(software_package_id, identifier),
                 FOREIGN KEY(software_package_id) REFERENCES software_package(id),
                 UNIQUE(software_package_id, identifier)
+            )
+            ''')
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS static_file (
+                software_version_id INTEGER NOT NULL,
+                src_path TEXT NOT NULL,
+                webroot_path TEXT NOT NULL,
+                checksum TEXT NOT NULL,
+                FOREIGN KEY(software_version_id) REFERENCES software_version(id),
+                UNIQUE(software_version_id, src_path, webroot_path)
             )
             ''')

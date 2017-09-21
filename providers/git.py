@@ -1,7 +1,7 @@
 import os
 
 from subprocess import CalledProcessError
-from typing import List, Pattern, Union
+from typing import List, Pattern, Set, Union
 
 from providers.provider import Provider
 from backends.software_package import SoftwarePackage
@@ -83,18 +83,18 @@ class GitTagProvider(GenericGitProvider):
         """Check out specified version."""
         self._checkout(version.identifier)
 
-    def get_versions(self) -> List[SoftwareVersion]:
+    def get_versions(self) -> Set[SoftwareVersion]:
         """Retrieve all versions from git tags."""
         self._refresh_repository()
 
         tags = self._check_command(['git', 'tag']).split('\n')
-        return [
+        return set(
             SoftwareVersion(self.software_package, tag)
             for tag in tags
             if ((not self.version_pattern or
                  self.version_pattern.match(tag)) and
                 (not self.exclude_pattern or
-                 not self.exclude_pattern.match(tag)))]
+                 not self.exclude_pattern.match(tag))))
 
 
 class GitException(Exception):

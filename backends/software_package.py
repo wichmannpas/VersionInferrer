@@ -12,9 +12,6 @@ class SoftwarePackage(Model):
         self.name = name
         self.vendor = vendor
 
-    def __repr__(self) -> str:
-        return "<{} '{}'>".format(str(self.__class__.__name__), str(self))
-
     def __str__(self) -> str:
         return self.name
 

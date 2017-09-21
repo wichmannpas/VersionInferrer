@@ -2,7 +2,7 @@ import os
 
 from abc import abstractmethod, ABCMeta
 from subprocess import call, check_output
-from typing import List
+from typing import List, Set
 
 from backends.software_package import SoftwarePackage
 from backends.software_version import SoftwareVersion
@@ -23,8 +23,8 @@ class Provider(metaclass=ABCMeta):
         """Check out specified version into directory."""
 
     @abstractmethod
-    def get_versions(self) -> List[SoftwareVersion]:
-        """Retrieve all available versions and return them as a list."""
+    def get_versions(self) -> Set[SoftwareVersion]:
+        """Retrieve all available versions and return them as a set."""
 
     def _call_command(self, command: List[str]) -> int:
         """
