@@ -4,7 +4,8 @@ from abc import abstractmethod, ABCMeta
 from subprocess import call, check_output
 from typing import List
 
-from software_package import SoftwarePackage, SoftwareVersion
+from backend.software_package import SoftwarePackage
+from backend.software_version import SoftwareVersion
 
 
 class Provider(metaclass=ABCMeta):
