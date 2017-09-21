@@ -72,9 +72,11 @@ class GitCommitProvider(GenericGitProvider):
 class GitTagProvider(GenericGitProvider):
     """A Git provider using tags for versions."""
     def __init__(self, software_package: SoftwarePackage, url: str,
-                 version_pattern: Union[Pattern, None] = None):
+                 version_pattern: Union[Pattern, None] = None,
+                 exclude_pattern: Union[Pattern, None] = None):
         super().__init__(software_package, url)
         self.version_pattern = version_pattern
+        self.exclude_pattern = exclude_pattern
 
     def checkout_version(self, version: SoftwareVersion):
         """Check out specified version."""
@@ -88,7 +90,10 @@ class GitTagProvider(GenericGitProvider):
         return [
             SoftwareVersion(self.software_package, tag)
             for tag in tags
-            if not self.version_pattern or self.version_pattern.match(tag)]
+            if ((not self.version_pattern or
+                 self.version_pattern.match(tag)) and
+                (not self.exclude_pattern or
+                 not self.exclude_pattern.match(tag)))]
 
 
 class GitException(Exception):
