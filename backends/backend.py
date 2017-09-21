@@ -9,8 +9,13 @@ from backends.software_version import SoftwareVersion
 class Backend(metaclass=ABCMeta):
     """A base class for database backends."""
     @abstractmethod
+    def mark_indexed(self, software_version: SoftwareVersion, indexed: bool = True) -> bool:
+        """Update a software version fully indexed flag. """
+
+    @abstractmethod
     def retrieve_versions(
-            self, software_package: SoftwarePackage) -> Set[SoftwareVersion]:
+            self, software_package: SoftwarePackage,
+            indexed_only: bool = True) -> Set[SoftwareVersion]:
         """Retrieve all available versions for specified software package. """
 
     @abstractmethod

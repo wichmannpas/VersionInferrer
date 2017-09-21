@@ -25,22 +25,42 @@ class SqliteBackend(Backend):
     def __del__(self):
         self._connection.close()
 
+    def mark_indexed(self, software_version: SoftwareVersion, indexed: bool = True) -> bool:
+        """Mark a software version as fully indexed. """
+        software_version_id = self._get_id(software_version)
+        if software_version_id is None:
+            raise BackendException(
+                'software version does not exist in database')
+        with closing(self._connection.cursor()) as cursor:
+            # Insert new element
+            cursor.execute('''
+            UPDATE
+                software_version
+            SET
+                indexed=?
+            WHERE
+                id=?
+            ''', (indexed, software_version_id,))
+
     def retrieve_versions(
-            self, software_package: SoftwarePackage) -> Set[SoftwareVersion]:
+            self, software_package: SoftwarePackage,
+            indexed_only: bool = True) -> Set[SoftwareVersion]:
         """Retrieve all available versions for specified software package. """
         software_package_id = self._get_id(software_package)
         if software_package_id is None:
             raise BackendException('software package not stored')
 
         with closing(self._connection.cursor()) as cursor:
-            # Insert new element
-            cursor.execute('''
+            query = '''
             SELECT
                 identifier
             FROM software_version
             WHERE
                 software_package_id=?
-            ''', (software_package_id,))
+            '''
+            if indexed_only:
+                query += 'AND indexed=1'
+            cursor.execute(query, (software_package_id,))
 
             return set(SoftwareVersion(software_package, row[0])
                        for row in cursor.fetchall())
@@ -191,6 +211,7 @@ class SqliteBackend(Backend):
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 software_package_id INTEGER NOT NULL,
                 identifier TEXT NOT NULL,
+                indexed BOOLEAN DEFAULT 0,
                 FOREIGN KEY(software_package_id) REFERENCES software_package(id),
                 UNIQUE(software_package_id, identifier)
             )

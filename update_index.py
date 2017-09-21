@@ -13,7 +13,7 @@ for definition in definitions:
 
     missing_versions = available_versions - indexed_versions
     for version in missing_versions:
-        # TODO: Use backend transactions
         static_files = indexing.collect_static_files(definition, version)
         for static_file in static_files:
             BACKEND.store(static_file)
+        BACKEND.mark_indexed(version)
