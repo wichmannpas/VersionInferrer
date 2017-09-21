@@ -15,4 +15,4 @@ class SoftwareVersion(Model):
         return "<{} '{}'>".format(str(self.__class__.__name__), str(self))
 
     def __str__(self) -> str:
-        return '{} {}'.format(str(self.software), self.identifier)
+        return '{} {}'.format(str(self.software_package), self.identifier)

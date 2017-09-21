@@ -24,6 +24,26 @@ class SqliteBackend(Backend):
     def __del__(self):
         self._connection.close()
 
+    def retrieve_versions(
+            self, software_package: SoftwarePackage) -> List[SoftwareVersion]:
+        """Retrieve all available versions for specified software package. """
+        software_package_id = self._get_id(software_package)
+        if software_package_id is None:
+            raise BackendException('software package not stored')
+
+        with closing(self._connection.cursor()) as cursor:
+            # Insert new element
+            cursor.execute('''
+            SELECT
+                identifier
+            FROM software_version
+            WHERE
+                software_package_id=?
+            ''', (software_package_id,))
+
+            return [SoftwareVersion(software_package, row[0])
+                    for row in cursor.fetchall()]
+
     def store(self, element: Model) -> bool:
         """
         Insert or update an instance of a Model subclass.
@@ -89,7 +109,7 @@ class SqliteBackend(Backend):
                 SELECT id
                 FROM software_package
                 WHERE
-
+                    name=? AND
                     vendor=?
                 ''', (element.name, element.vendor))
                 row = cursor.fetchone()

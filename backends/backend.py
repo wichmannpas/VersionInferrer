@@ -9,6 +9,11 @@ from backends.software_version import SoftwareVersion
 class Backend(metaclass=ABCMeta):
     """A base class for database backends."""
     @abstractmethod
+    def retrieve_versions(
+            self, software_package: SoftwarePackage) -> List[SoftwareVersion]:
+        """Retrieve all available versions for specified software package. """
+
+    @abstractmethod
     def store(self, element: Model) -> bool:
         """
         Insert or update an instance of a Model subclass.
