@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 # Backend
-from backend.sqlite import SqliteBackend
+from backends.sqlite import SqliteBackend
 BACKEND = SqliteBackend(os.path.join(BASE_DIR, 'db.sqlite3'))
 
 

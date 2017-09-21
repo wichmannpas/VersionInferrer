@@ -1,5 +1,5 @@
-from backend.model import Model
-from backend.software_package import SoftwarePackage
+from backends.model import Model
+from backends.software_package import SoftwarePackage
 
 
 class SoftwareVersion(Model):

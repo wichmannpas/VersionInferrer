@@ -1,6 +1,6 @@
 import os
 
-from backend.model import Model
+from backends.model import Model
 
 
 class SoftwarePackage(Model):

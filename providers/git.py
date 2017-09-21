@@ -4,8 +4,8 @@ from subprocess import CalledProcessError
 from typing import List, Pattern, Union
 
 from providers.provider import Provider
-from backend.software_package import SoftwarePackage
-from backend.software_version import SoftwareVersion
+from backends.software_package import SoftwarePackage
+from backends.software_version import SoftwareVersion
 
 
 class GenericGitProvider(Provider):

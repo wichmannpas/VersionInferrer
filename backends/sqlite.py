@@ -1,12 +1,12 @@
 import sqlite3
 
 from contextlib import closing
-from typing import Union
+from typing import List, Union
 
-from backend.backend import Backend, BackendException
-from backend.model import Model
-from backend.software_package import SoftwarePackage
-from backend.software_version import SoftwareVersion
+from backends.backend import Backend, BackendException
+from backends.model import Model
+from backends.software_package import SoftwarePackage
+from backends.software_version import SoftwareVersion
 
 
 class SqliteBackend(Backend):

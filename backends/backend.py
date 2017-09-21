@@ -1,6 +1,9 @@
 from abc import abstractmethod, ABCMeta
+from typing import List
 
-from backend.model import Model
+from backends.model import Model
+from backends.software_package import SoftwarePackage
+from backends.software_version import SoftwareVersion
 
 
 class Backend(metaclass=ABCMeta):
