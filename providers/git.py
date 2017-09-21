@@ -45,7 +45,7 @@ class GenericGitProvider(Provider):
         """Do a git checkout of specified git object."""
         self._refresh_repository()
 
-        code = self._run_command(['git', 'checkout', git_object])
+        code = self._call_command(['git', 'checkout', git_object])
         if code != 0:
             raise GitException('checkout failed')
 
@@ -59,7 +59,7 @@ class GenericGitProvider(Provider):
         os.makedirs(
             os.path.dirname(self.cache_directory),
             exist_ok=True)
-        code = self._run_command(
+        code = self._call_command(
             ['git', 'clone', self.url, self.cache_directory])
         if code != 0:
             raise GitException('init failed')
@@ -67,11 +67,11 @@ class GenericGitProvider(Provider):
     def _refresh_repository(self):
         if not self._check_cache_directory():
             self._init_repository()
-        code = self._run_command(['git', 'pull'])
+        code = self._call_command(['git', 'pull'])
         if code != 0:
             raise GitException('refresh failed')
 
-    def _run_command(self, command: List[str]) -> int:
+    def _call_command(self, command: List[str]) -> int:
         """
         Run a command within the cache directory and return its return code.
         """
