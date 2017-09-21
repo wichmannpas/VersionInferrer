@@ -1,4 +1,7 @@
+import os
+
 from abc import abstractmethod, ABCMeta
+from subprocess import call, check_output
 from typing import List
 
 from software_package import SoftwarePackage, SoftwareVersion
@@ -21,3 +24,22 @@ class Provider(metaclass=ABCMeta):
     @abstractmethod
     def get_versions(self) -> List[SoftwareVersion]:
         """Retrieve all available versions and return them as a list."""
+
+    def _call_command(self, command: List[str]) -> int:
+        """
+        Run a command within the cache directory and return its return code.
+        """
+        cwd = None
+        if os.path.isdir(self.cache_directory):
+            cwd = self.cache_directory
+        return call(command, cwd=cwd)
+
+    def _check_command(self, command: List[str]) -> str:
+        """
+        Run a command within the cache directory and return its output as str.
+        """
+        cwd = None
+        if os.path.isdir(self.cache_directory):
+            cwd = self.cache_directory
+        return check_output(
+            command, cwd=cwd).decode()[:-1]

@@ -1,6 +1,6 @@
 import os
 
-from subprocess import call, check_output, CalledProcessError
+from subprocess import CalledProcessError
 from typing import List, Pattern, Union
 
 from providers.provider import Provider
@@ -34,16 +34,6 @@ class GenericGitProvider(Provider):
             return False
         return remote_url == self.url
 
-    def _check_command(self, command: List[str]) -> str:
-        """
-        Run a command within the cache directory and return its output as str.
-        """
-        cwd = None
-        if os.path.isdir(self.cache_directory):
-            cwd = self.cache_directory
-        return check_output(
-            command, cwd=cwd).decode()[:-1]
-
     def _checkout(self, git_object: str):
         """Do a git checkout of specified git object."""
         self._refresh_repository()
@@ -73,15 +63,6 @@ class GenericGitProvider(Provider):
         code = self._call_command(['git', 'pull'])
         if code != 0:
             raise GitException('refresh failed')
-
-    def _call_command(self, command: List[str]) -> int:
-        """
-        Run a command within the cache directory and return its return code.
-        """
-        cwd = None
-        if os.path.isdir(self.cache_directory):
-            cwd = self.cache_directory
-        return call(command, cwd=cwd)
 
 
 class GitCommitProvider(GenericGitProvider):
