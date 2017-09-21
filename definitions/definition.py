@@ -1,3 +1,4 @@
+from backends.software_package import SoftwarePackage
 from providers.provider import Provider
 
 
@@ -10,7 +11,6 @@ class SoftwareDefinition:
     The path_map specifies a (usual) mapping from web root path to the source
       code repository.
     """
-    name: str
-    vendor: str
+    software_package: SoftwarePackage
     provider: Provider
     path_map: dict

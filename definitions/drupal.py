@@ -1,8 +1,8 @@
 import re
 
+from backends.software_package import SoftwarePackage
 from definitions.definition import SoftwareDefinition
 from providers.git import GitTagProvider
-from backends.software_package import SoftwarePackage
 
 
 class Drupal(SoftwareDefinition):

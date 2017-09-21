@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABCMeta
-from typing import List
+from typing import Set
 
 from backends.model import Model
 from backends.software_package import SoftwarePackage
@@ -10,7 +10,7 @@ class Backend(metaclass=ABCMeta):
     """A base class for database backends."""
     @abstractmethod
     def retrieve_versions(
-            self, software_package: SoftwarePackage) -> List[SoftwareVersion]:
+            self, software_package: SoftwarePackage) -> Set[SoftwareVersion]:
         """Retrieve all available versions for specified software package. """
 
     @abstractmethod

@@ -1,7 +1,7 @@
 import sqlite3
 
 from contextlib import closing
-from typing import List, Union
+from typing import Set, Union
 
 from backends.backend import Backend, BackendException
 from backends.model import Model
@@ -25,7 +25,7 @@ class SqliteBackend(Backend):
         self._connection.close()
 
     def retrieve_versions(
-            self, software_package: SoftwarePackage) -> List[SoftwareVersion]:
+            self, software_package: SoftwarePackage) -> Set[SoftwareVersion]:
         """Retrieve all available versions for specified software package. """
         software_package_id = self._get_id(software_package)
         if software_package_id is None:
@@ -41,8 +41,8 @@ class SqliteBackend(Backend):
                 software_package_id=?
             ''', (software_package_id,))
 
-            return [SoftwareVersion(software_package, row[0])
-                    for row in cursor.fetchall()]
+            return set(SoftwareVersion(software_package, row[0])
+                    for row in cursor.fetchall())
 
     def store(self, element: Model) -> bool:
         """
