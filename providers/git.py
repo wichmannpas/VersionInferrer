@@ -101,6 +101,8 @@ class GitTagProvider(GenericGitProvider):
 
     def get_versions(self) -> List[SoftwareVersion]:
         """Retrieve all versions from git tags."""
+        self._refresh_repository()
+
         tags = self._check_command(['git', 'tag']).split('\n')
         return [
             SoftwareVersion(self.software_package, tag)
