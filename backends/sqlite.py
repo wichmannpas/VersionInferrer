@@ -128,40 +128,34 @@ class SqliteBackend(Backend):
                 self.store(element.software_version)
                 software_version_id = self._get_id(
                     element.software_version)
+            static_file_id = self._get_or_create_static_file(element)
             with closing(self._connection.cursor()) as cursor:
                 # Check whether element exists
                 cursor.execute('''
                 SELECT
                     COUNT(*)
-                FROM static_file
+                FROM static_file_use
                 WHERE
                     software_version_id=? AND
-                    src_path=? AND
-                    webroot_path=?
-                ''', (software_version_id, element.src_path, element.webroot_path))
+                    static_file_id=?
+                ''', (software_version_id, static_file_id))
 
                 if cursor.fetchone()[0]:
-                    # static file exists already
+                    # static file use exists already
                     return False
 
                 # Insert new element
                 cursor.execute('''
                 INSERT
-                INTO static_file (
+                INTO static_file_use (
                     software_version_id,
-                    src_path,
-                    webroot_path,
-                    checksum)
+                    static_file_id)
                 VALUES (
-                    ?,
-                    ?,
                     ?,
                     ?)
                 ''', (
                     software_version_id,
-                    element.src_path,
-                    element.webroot_path,
-                    element.checksum))
+                    static_file_id))
                 return True
         raise BackendException('unsupported model type')
 
@@ -178,7 +172,7 @@ class SqliteBackend(Backend):
                 ''', (element.name, element.vendor))
                 row = cursor.fetchone()
                 return row[0] if row is not None else None
-        if isinstance(element, SoftwareVersion):
+        elif isinstance(element, SoftwareVersion):
             software_package_id = self._get_id(element.software_package)
             if software_package_id is None:
                 return None
@@ -192,8 +186,42 @@ class SqliteBackend(Backend):
                 ''', (software_package_id, element.identifier))
                 row = cursor.fetchone()
                 return row[0] if row is not None else None
-        raise BackendException('unsupported model type for id lookup')
+        elif isinstance(element, StaticFile):
+            with closing(self._connection.cursor()) as cursor:
+                cursor.execute('''
+                SELECT id
+                FROM static_file
+                WHERE
+                    src_path=? AND
+                    webroot_path=? AND
+                    checksum=?
+                ''', (element.src_path, element.webroot_path, element.checksum))
+                row = cursor.fetchone()
+                return row[0] if row is not None else None
+        raise BackendException(
+            'unsupported model type for id lookup: {}'.format(type(element)))
 
+    def _get_or_create_static_file(self, static_file: StaticFile) -> id:
+        """Get or create a static file element an return its id."""
+        static_file_id = self._get_id(static_file)
+        if static_file_id:
+            return static_file_id
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            INSERT
+            INTO static_file (
+                src_path,
+                webroot_path,
+                checksum)
+            VALUES(
+                ?,
+                ?,
+                ?)
+            ''', (
+                static_file.src_path,
+                static_file.webroot_path,
+                static_file.checksum))
+        return self._get_id(static_file)
 
     def _migrate(self):
         """Create the database tables if they do not exist."""
@@ -218,11 +246,18 @@ class SqliteBackend(Backend):
             ''')
             cursor.execute('''
             CREATE TABLE IF NOT EXISTS static_file (
-                software_version_id INTEGER NOT NULL,
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 src_path TEXT NOT NULL,
                 webroot_path TEXT NOT NULL,
-                checksum TEXT NOT NULL,
+                checksum TEXT NOT NULL
+            )
+            ''')
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS static_file_use (
+                software_version_id INTEGER NOT NULL,
+                static_file_id INTEGER NOT NULL,
                 FOREIGN KEY(software_version_id) REFERENCES software_version(id),
-                UNIQUE(software_version_id, src_path, webroot_path)
+                FOREIGN KEY(static_file_id) REFERENCES static_file(id),
+                PRIMARY KEY(software_version_id, static_file_id)
             )
             ''')
