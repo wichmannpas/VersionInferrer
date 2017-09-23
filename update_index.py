@@ -2,19 +2,23 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from traceback import print_exc
-from typing import Set
+from typing import Set, Tuple
 
 from backends.software_version import SoftwareVersion
+from backends.model import Model
 from definitions.definition import SoftwareDefinition
 from definitions import definitions
 from indexing import indexing
 from settings import BACKEND, LOG_FORMAT, MAX_WORKERS, STEP_LIMIT
 
+
 logging.basicConfig(format=LOG_FORMAT, level=logging.INFO)
 
 
 def handle_definition(
-        definition: SoftwareDefinition, indexed_versions: Set[SoftwareVersion]):
+        definition: SoftwareDefinition,
+        indexed_versions: Set[SoftwareVersion]) -> Tuple[
+            Set[Model], SoftwareVersion]:
     store_objects = set()
 
     logging.info('handling software package %s', definition.software_package)
@@ -30,8 +34,7 @@ def handle_definition(
         logging.info('indexing %d static files', len(static_files))
         for static_file in static_files:
             store_objects.add(static_file)
-        store_objects.add(version)
-    return store_objects
+    return store_objects, version
 
 
 while True:
@@ -47,11 +50,12 @@ while True:
             futures.add(
                 executor.submit(handle_definition, definition, indexed_versions))
         for future in futures:
-            result = future.result()
-            if result:
+            store_objects, version = future.result()
+            if store_objects:
                 changed = True
-                logging.info('storing %d elements to backend', len(result))
-                for element in result:
+                logging.info('storing %d elements to backend', len(store_objects))
+                for element in store_objects:
                     BACKEND.store(element)
+            BACKEND.mark_indexed(version)
     if not changed:
         break
