@@ -39,7 +39,7 @@ class GenericGitProvider(Provider):
         """Do a git checkout of specified git object."""
         self._refresh_repository()
 
-        code = self._call_command(['git', 'checkout', git_object])
+        code = self._call_command(['git', 'reset', '--hard', git_object])
         if code != 0:
             raise GitException('checkout failed')
 
