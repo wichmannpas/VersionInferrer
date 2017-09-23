@@ -15,6 +15,12 @@ class SoftwarePackage(Model):
     def __str__(self) -> str:
         return self.name
 
+    def __eq__(self, other) -> bool:
+        return self.name == other.name and self.vendor == other.vendor
+
+    def __hash__(self) -> int:
+        return hash(self.name) + hash(self.vendor)
+
     @property
     def cache_directory(self) -> str:
         """A path to the cache directory."""

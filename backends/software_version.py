@@ -13,3 +13,10 @@ class SoftwareVersion(Model):
 
     def __str__(self) -> str:
         return '{} {}'.format(str(self.software_package), self.identifier)
+
+    def __eq__(self, other) -> bool:
+        return (self.software_package == other.software_package and
+                self.identifier == other.identifier)
+
+    def __hash__(self) -> int:
+        return hash(self.software_package) + hash(self.identifier)
