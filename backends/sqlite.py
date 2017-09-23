@@ -10,9 +10,24 @@ from backends.software_version import SoftwareVersion
 from backends.static_file import StaticFile
 
 
+def use_id_cache(f):
+    def decorated(*args, **kwargs):
+        self = args[0]
+        element = args[1]
+        if element in self._id_cache:
+            return self._id_cache[element]
+        elem_id = f(*args, **kwargs)
+        if elem_id is not None:
+            self._id_cache[element] = elem_id
+        return elem_id
+    return decorated
+
+
 class SqliteBackend(Backend):
     """The backend handling the SQLite communication."""
     def __init__(self, path: str):
+        self._id_cache = {}
+
         self._connection = sqlite3.connect(path)
 
         # Enable foreign keys
@@ -179,6 +194,7 @@ class SqliteBackend(Backend):
                 return True
         raise BackendException('unsupported model type')
 
+    @use_id_cache
     def _get_id(self, element: Model) -> Union[int, None]:
         """Get the id of a model instance if it exists and has an id field."""
         if isinstance(element, SoftwarePackage):
