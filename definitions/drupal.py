@@ -17,3 +17,4 @@ class Drupal(SoftwareDefinition):
     path_map = {
         '/': '/',
     }
+    ignore_paths = None

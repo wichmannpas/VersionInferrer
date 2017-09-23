@@ -26,7 +26,12 @@ def collect_static_files(
                 definition.provider.cache_directory,
                 webroot_path,
                 src_path))
-    return static_files
+    return [
+        static_file
+        for static_file in static_files
+        if (definition.ignore_paths is None or
+            not definition.ignore_paths.match(static_file.src_path))
+    ]
 
 
 def list_static_files(

@@ -15,3 +15,4 @@ class Wordpress(SoftwareDefinition):
         '/': '/',
         '/': '/',
     }
+    ignore_paths = None
