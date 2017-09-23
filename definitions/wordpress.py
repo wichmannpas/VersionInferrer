@@ -13,6 +13,5 @@ class Wordpress(SoftwareDefinition):
     )
     path_map = {
         '/': '/',
-        '/': '/',
     }
     ignore_paths = None
