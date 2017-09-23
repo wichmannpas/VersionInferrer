@@ -7,8 +7,9 @@ LOG_FORMAT = '%(asctime)-15s: %(message)s'
 
 
 # Backend
-from backends.sqlite import SqliteBackend
-BACKEND = SqliteBackend(os.path.join(BASE_DIR, 'db.sqlite3'))
+from backends.postgresql import PostgresqlBackend
+BACKEND = PostgresqlBackend(database='ba', user='ba', password='ba')
+#BACKEND = SqliteBackend(os.path.join(BASE_DIR, 'db.sqlite3'))
 
 
 # Cache
