@@ -26,4 +26,5 @@ STATIC_FILE_EXTENSIONS = [
     '.scss',
     '.svg',
     '.ttf',
+    '.txt',
 ]
