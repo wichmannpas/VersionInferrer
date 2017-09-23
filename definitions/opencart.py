@@ -12,6 +12,6 @@ class OpenCart(SoftwareDefinition):
         url='https://github.com/opencart/opencart.git'
     )
     path_map = {
-        '/': '/',
+        '/': '/upload/',
     }
     ignore_paths = None
