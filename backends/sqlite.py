@@ -65,6 +65,26 @@ class SqliteBackend(Backend):
             return set(SoftwareVersion(software_package, row[0])
                        for row in cursor.fetchall())
 
+    def static_file_count(self, software_version: SoftwareVersion) -> int:
+        """Get the count of static files used by a software version. """
+        software_version_id = self._get_id(software_version)
+        if software_version_id is None:
+            raise BackendException('software version not stored')
+
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            SELECT
+                COUNT(*)
+            FROM static_file_use
+            WHERE
+                software_version_id=?
+            ''', (software_version_id,))
+
+            row = cursor.fetchone()
+            if row:
+                return row[0]
+            return 0
+
     def store(self, element: Model) -> bool:
         """
         Insert or update an instance of a Model subclass.

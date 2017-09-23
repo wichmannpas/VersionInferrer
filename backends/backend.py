@@ -19,12 +19,12 @@ class Backend(metaclass=ABCMeta):
         """Retrieve all available versions for specified software package. """
 
     @abstractmethod
-    def store(self, element: Model) -> bool:
-        """
-        Insert or update an instance of a Model subclass.
+    def static_file_count(self, software_version: SoftwareVersion) -> int:
+        """Get the count of static files used by a software version. """
 
-        Returns whether a change has been made.
-        """
+    @abstractmethod
+    def store(self, element: Model):
+        """Insert or update an instance of a Model subclass. """
 
 
 class BackendException(Exception):
