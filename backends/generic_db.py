@@ -9,15 +9,15 @@ from backends.software_version import SoftwareVersion
 from backends.static_file import StaticFile
 
 
-def use_id_cache(f):
+def use_cache(f):
     def decorated(*args, **kwargs):
         self = args[0]
         element = args[1]
-        if element in self._id_cache:
-            return self._id_cache[element]
+        if element in self._cache:
+            return self._cache[element]
         elem_id = f(*args, **kwargs)
         if elem_id is not None:
-            self._id_cache[element] = elem_id
+            self._cache[element] = elem_id
         return elem_id
     return decorated
 
@@ -25,9 +25,10 @@ def use_id_cache(f):
 class GenericDatabaseBackend(Backend):
     """The backend handling the SQLite communication."""
     _operator: str
+    _true_value: str
 
     def __init__(self, *args, **kwargs):
-        self._id_cache = {}
+        self._cache = {}
 
         self._open_connection(*args, **kwargs)
 
@@ -75,7 +76,7 @@ class GenericDatabaseBackend(Backend):
                 software_package_id=''' + self._operator + '''
             '''
             if indexed_only:
-                query += 'AND indexed=true'
+                query += 'AND indexed=' + self._true_value
             cursor.execute(query, (software_package_id,))
 
             return set(SoftwareVersion(software_package, row[0])
@@ -195,7 +196,7 @@ class GenericDatabaseBackend(Backend):
                 return True
         raise BackendException('unsupported model type')
 
-    @use_id_cache
+    @use_cache
     def _get_id(self, element: Model) -> Union[int, None]:
         """Get the id of a model instance if it exists and has an id field."""
         if isinstance(element, SoftwarePackage):

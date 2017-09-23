@@ -9,6 +9,7 @@ from backends.generic_db import GenericDatabaseBackend
 class SqliteBackend(GenericDatabaseBackend):
     """The backend handling the SQLite communication."""
     _operator = '?'
+    _true_value = '1'
 
     def _open_connection(self, *args, **kwargs):
         """Open a connection to the database."""
