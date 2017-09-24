@@ -1,7 +1,7 @@
 import os
 
 from subprocess import CalledProcessError
-from typing import List, Pattern, Set, Union
+from typing import Callable, List, Pattern, Set, Union
 
 from providers.provider import Provider
 from backends.software_package import SoftwarePackage
@@ -13,8 +13,10 @@ class GenericGitProvider(Provider):
     This is a generic Git provider. It handles the repository retrieval.
     Version detection is handled in its subclasses.
     """
-    def __init__(self, software_package: SoftwarePackage, url: str):
-        super().__init__(software_package)
+    def __init__(
+            self, software_package: SoftwarePackage, url: str,
+            version_name_derivator: Union[Callable[[str], str], None] = None):
+        super().__init__(software_package, version_name_derivator)
         self.url = url
 
     def __str__(self) -> str:
@@ -72,10 +74,12 @@ class GitCommitProvider(GenericGitProvider):
 
 class GitTagProvider(GenericGitProvider):
     """A Git provider using tags for versions."""
-    def __init__(self, software_package: SoftwarePackage, url: str,
-                 version_pattern: Union[Pattern, None] = None,
-                 exclude_pattern: Union[Pattern, None] = None):
-        super().__init__(software_package, url)
+    def __init__(
+            self, software_package: SoftwarePackage, url: str,
+            version_name_derivator: Union[Callable[[str], str], None] = None,
+            version_pattern: Union[Pattern, None] = None,
+            exclude_pattern: Union[Pattern, None] = None):
+        super().__init__(software_package, url, version_name_derivator)
         self.version_pattern = version_pattern
         self.exclude_pattern = exclude_pattern
 
@@ -90,13 +94,13 @@ class GitTagProvider(GenericGitProvider):
         tags = self._check_command(['git', 'tag']).split('\n')
         # Excluded versions are None and removed after set comprehension
         result = {
-            self._get_software_version_from_tag(tag)
+            self._get_software_version(tag)
             for tag in tags}
         if None in result:
             result.remove(None)
         return result
 
-    def _get_software_version_from_tag(
+    def _get_software_version(
             self, tag: str) -> Union[SoftwareVersion, None]:
         """Get a SoftwareVersion object from a git tag name."""
         internal_identifier = tag
@@ -109,6 +113,10 @@ class GitTagProvider(GenericGitProvider):
         if self.exclude_pattern:
             if self.exclude_pattern.match(tag):
                 return
+
+        # Apply additional name derivation functions from superclasses
+        name = super()._get_software_version(name).name
+
         return SoftwareVersion(
             software_package=self.software_package,
             name=name,
