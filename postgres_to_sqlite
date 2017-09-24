@@ -1,0 +1,28 @@
+#!/bin/sh -e
+POSTGRES_DB=$1
+SQLITE_DB=$2
+
+if [ "$POSTGRES_DB" == "" ] || [ "$SQLITE_DB" == "" ];
+then
+  echo "Usage: ./postgres_to_sqlite POSTGRES_DB SQLITE_DB"
+  exit 1
+fi
+
+rm -f $SQLITE_DB
+python3 -c "from backends.sqlite import SqliteBackend;SqliteBackend('$SQLITE_DB');"
+sudo -iu postgres pg_dump $POSTGRES_DB --column-inserts --data-only | pv | sed "s/^SE.*$//" | sed "s/ true);$/1);/" | sed "s/ false);$/0);/" | sqlite3 $SQLITE_DB
+
+# Convert hex checksums from dump to actual binary values
+python3 -c "exec('''
+from backends.sqlite import SqliteBackend
+b = SqliteBackend('$SQLITE_DB')
+c = b._connection.cursor()
+c2 = b._connection.cursor()
+c.execute('SELECT id, checksum FROM static_file')
+for sf_id, checksum in c.fetchall():
+    bin_checksum = int(checksum[2:], 16).to_bytes(16, 'big')
+    c2.execute('UPDATE static_file SET checksum=? WHERE id=?', (bin_checksum, sf_id))
+b._connection.commit()''')"
+
+# Vacuum database
+sqlite3 $SQLITE_DB VACUUM
