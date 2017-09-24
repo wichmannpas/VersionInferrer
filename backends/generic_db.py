@@ -70,7 +70,8 @@ class GenericDatabaseBackend(Backend):
         with closing(self._connection.cursor()) as cursor:
             query = '''
             SELECT
-                identifier
+                name,
+                internal_identifier
             FROM software_version
             WHERE
                 software_package_id=''' + self._operator + '''
@@ -79,7 +80,7 @@ class GenericDatabaseBackend(Backend):
                 query += 'AND indexed=' + self._true_value
             cursor.execute(query, (software_package_id,))
 
-            return set(SoftwareVersion(software_package, row[0])
+            return set(SoftwareVersion(software_package, name=row[0], internal_identifier=row[1])
                        for row in cursor.fetchall())
 
     def static_file_count(self, software_version: SoftwareVersion) -> int:
@@ -139,8 +140,8 @@ class GenericDatabaseBackend(Backend):
                 FROM software_version
                 WHERE
                     software_package_id=''' + self._operator + ''' AND
-                    identifier=''' + self._operator + '''
-                ''', (software_package_id, element.identifier))
+                    internal_identifier=''' + self._operator + '''
+                ''', (software_package_id, element.internal_identifier))
 
                 if cursor.fetchone()[0]:
                     # software version exists already
@@ -151,11 +152,13 @@ class GenericDatabaseBackend(Backend):
                 INSERT
                 INTO software_version (
                     software_package_id,
-                    identifier)
+                    name,
+                    internal_identifier)
                 VALUES (
                     ''' + self._operator + ''',
+                    ''' + self._operator + ''',
                     ''' + self._operator + ''')
-                ''', (software_package_id, element.identifier))
+                ''', (software_package_id, element.name, element.internal_identifier))
                 return True
         elif isinstance(element, StaticFile):
             software_version_id = self._get_id(
@@ -220,8 +223,9 @@ class GenericDatabaseBackend(Backend):
                 FROM software_version
                 WHERE
                     software_package_id=''' + self._operator + ''' AND
-                    identifier=''' + self._operator + '''
-                ''', (software_package_id, element.identifier))
+                    name=''' + self._operator + ''' AND
+                    internal_identifier=''' + self._operator + '''
+                ''', (software_package_id, element.name, element.internal_identifier))
                 row = cursor.fetchone()
                 return row[0] if row is not None else None
         elif isinstance(element, StaticFile):

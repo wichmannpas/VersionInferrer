@@ -34,10 +34,11 @@ class SqliteBackend(GenericDatabaseBackend):
             CREATE TABLE IF NOT EXISTS software_version (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 software_package_id INTEGER NOT NULL,
-                identifier TEXT NOT NULL,
+                name TEXT NOT NULL,
+                internal_identifier TEXT NOT NULL,
                 indexed BOOLEAN DEFAULT 0,
                 FOREIGN KEY(software_package_id) REFERENCES software_package(id),
-                UNIQUE(software_package_id, identifier)
+                UNIQUE(software_package_id, name, internal_identifier)
             )
             ''')
             cursor.execute('''

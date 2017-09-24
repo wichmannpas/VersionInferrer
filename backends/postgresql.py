@@ -76,14 +76,16 @@ class PostgresqlBackend(GenericDatabaseBackend):
             INSERT
             INTO software_version (
                 software_package_id,
-                identifier)
+                name,
+                internal_identifier)
             VALUES (
                 %s,
+                %s,
                 %s)
-            ON CONFLICT (software_package_id, identifier) DO UPDATE
+            ON CONFLICT (software_package_id, name, internal_identifier) DO UPDATE
                 SET software_package_id=software_version.software_package_id
             RETURNING id
-            ''', (software_package_id, software_version.identifier))
+            ''', (software_package_id, software_version.name, software_version.internal_identifier))
             return cursor.fetchone()[0]
 
     def _get_or_create_static_file(self, static_file: StaticFile) -> int:
@@ -136,10 +138,11 @@ class PostgresqlBackend(GenericDatabaseBackend):
             CREATE TABLE IF NOT EXISTS software_version (
                 id INTEGER PRIMARY KEY DEFAULT NEXTVAL('software_version_id_seq') NOT NULL,
                 software_package_id INTEGER NOT NULL,
-                identifier TEXT NOT NULL,
+                name TEXT NOT NULL,
+                internal_identifier TEXT NOT NULL,
                 indexed BOOLEAN DEFAULT 'f',
-                FOREIGN KEY(software_package_id) REFERENCES software_package(id),
-                UNIQUE(software_package_id, identifier)
+                FOREIGN KEY(software_package_id) REFERENCES software_package(id) ON DELETE CASCADE,
+                UNIQUE(software_package_id, name, internal_identifier)
             )
             ''')
             cursor.execute('''
@@ -158,8 +161,8 @@ class PostgresqlBackend(GenericDatabaseBackend):
             CREATE TABLE IF NOT EXISTS static_file_use (
                 software_version_id INTEGER NOT NULL,
                 static_file_id INTEGER NOT NULL,
-                FOREIGN KEY(software_version_id) REFERENCES software_version(id),
-                FOREIGN KEY(static_file_id) REFERENCES static_file(id),
+                FOREIGN KEY(software_version_id) REFERENCES software_version(id) ON DELETE CASCADE,
+                FOREIGN KEY(static_file_id) REFERENCES static_file(id) ON DELETE CASCADE,
                 PRIMARY KEY(software_version_id, static_file_id)
             )
             ''')

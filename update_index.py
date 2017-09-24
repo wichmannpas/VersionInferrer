@@ -28,7 +28,7 @@ def handle_definition(
     available_versions = definition.provider.get_versions()
 
     missing_versions = available_versions - indexed_versions
-    logging.info('%d versions not yet indexed', len(missing_versions))
+    logging.info('%d versions not yet indexed for %s', len(missing_versions), str(definition.software_package))
     for step in range(min(len(missing_versions), STEP_LIMIT)):
         version = missing_versions.pop()
 

@@ -81,20 +81,38 @@ class GitTagProvider(GenericGitProvider):
 
     def checkout_version(self, version: SoftwareVersion):
         """Check out specified version."""
-        self._checkout(version.identifier)
+        self._checkout(version.internal_identifier)
 
     def get_versions(self) -> Set[SoftwareVersion]:
         """Retrieve all versions from git tags."""
         self._refresh_repository()
 
         tags = self._check_command(['git', 'tag']).split('\n')
-        return set(
-            SoftwareVersion(self.software_package, tag)
-            for tag in tags
-            if ((not self.version_pattern or
-                 self.version_pattern.match(tag)) and
-                (not self.exclude_pattern or
-                 not self.exclude_pattern.match(tag))))
+        # Excluded versions are None and removed after set comprehension
+        result = {
+            self._get_software_version_from_tag(tag)
+            for tag in tags}
+        if None in result:
+            result.remove(None)
+        return result
+
+    def _get_software_version_from_tag(
+            self, tag: str) -> Union[SoftwareVersion, None]:
+        """Get a SoftwareVersion object from a git tag name."""
+        internal_identifier = tag
+        name = internal_identifier
+        if self.version_pattern:
+            match = self.version_pattern.match(tag)
+            if not match:
+                return
+            name = match.groupdict().get('version_name', internal_identifier)
+        if self.exclude_pattern:
+            if self.exclude_pattern.match(tag):
+                return
+        return SoftwareVersion(
+            software_package=self.software_package,
+            name=name,
+            internal_identifier=internal_identifier)
 
 
 class GitException(Exception):
