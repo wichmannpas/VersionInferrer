@@ -15,11 +15,12 @@ class SoftwareVersion(Model):
         self.internal_identifier = internal_identifier
 
     def __str__(self) -> str:
-        return '{} {}'.format(str(self.software_package), self.internal_identifier)
+        return '{} {}'.format(str(self.software_package), self.name)
 
     def __eq__(self, other) -> bool:
         return (self.software_package == other.software_package and
+                self.name == other.name and
                 self.internal_identifier == other.internal_identifier)
 
     def __hash__(self) -> int:
-        return hash(self.software_package) + hash(self.internal_identifier)
+        return hash(self.software_package) + hash(self.name) +  hash(self.internal_identifier)
