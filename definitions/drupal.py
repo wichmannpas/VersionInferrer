@@ -12,7 +12,7 @@ class Drupal(SoftwareDefinition):
     provider = GitTagProvider(
         software_package=software_package,
         url='https://github.com/drupal/drupal.git',
-        exclude_pattern=re.compile(r'start')
+        version_pattern=re.compile(r'\d\..*')
     )
     path_map = {
         '/': '/',
