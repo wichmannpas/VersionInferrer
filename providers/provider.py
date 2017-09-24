@@ -52,10 +52,8 @@ class Provider(metaclass=ABCMeta):
             self, internal_identifier: str) -> Union[SoftwareVersion, None]:
         """Get a SoftwareVersion object from an internal identifier."""
         name = internal_identifier
-        print('foo')
         if self.version_name_derivator is not None:
             name = self.version_name_derivator(internal_identifier)
-        print(name)
         return SoftwareVersion(
             software_package=self.software_package,
             name=name,
