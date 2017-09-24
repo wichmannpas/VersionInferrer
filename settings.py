@@ -32,4 +32,4 @@ STATIC_FILE_EXTENSIONS = [
     '.ttf',
     '.txt',
 ]
-STEP_LIMIT = 1
+STEP_LIMIT = 1000
