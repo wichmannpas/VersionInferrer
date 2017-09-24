@@ -8,7 +8,8 @@ LOG_FORMAT = '%(asctime)-15s: %(message)s'
 
 # Backend
 from backends.postgresql import PostgresqlBackend
-BACKEND = PostgresqlBackend(database='ba', user='ba', password='ba')
+BACKEND = PostgresqlBackend(host='127.0.0.1', database='ba', user='ba', password='ba')
+#from backends.sqlite import SqliteBackend
 #BACKEND = SqliteBackend(os.path.join(BASE_DIR, 'db.sqlite3'))
 
 
@@ -31,4 +32,4 @@ STATIC_FILE_EXTENSIONS = [
     '.ttf',
     '.txt',
 ]
-STEP_LIMIT = 3
+STEP_LIMIT = 1
