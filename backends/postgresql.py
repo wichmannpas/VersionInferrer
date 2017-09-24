@@ -153,7 +153,7 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 id INTEGER PRIMARY KEY DEFAULT NEXTVAL('static_file_id_seq') NOT NULL,
                 src_path TEXT NOT NULL,
                 webroot_path TEXT NOT NULL,
-                checksum TEXT NOT NULL,
+                checksum BYTEA NOT NULL,
                 UNIQUE(src_path, webroot_path, checksum)
             )
             ''')

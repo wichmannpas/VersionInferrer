@@ -59,7 +59,7 @@ def list_static_files(
     ]
 
 
-def _calculate_checksum(file_path: str) -> str:
+def _calculate_checksum(file_path: str) -> bytes:
     """Calculate a checksum for a file."""
     hasher = blake2b()
     with open(file_path, 'rb') as fh:
@@ -69,7 +69,7 @@ def _calculate_checksum(file_path: str) -> str:
                 break
             hasher.update(buf)
 
-    return hasher.hexdigest()
+    return hasher.digest()[:16]
 
 
 def _join_paths(*args):

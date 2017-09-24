@@ -7,10 +7,10 @@ class StaticFile(Model):
     software_version: SoftwareVersion
     src_path: str
     webroot_path: str
-    checksum: str
+    checksum: bytes
 
     def __init__(self, software_version: SoftwareVersion, src_path:
-                 str, webroot_path: str, checksum: str):
+                 str, webroot_path: str, checksum: bytes):
         self.software_version = software_version
         self.src_path = src_path
         self.webroot_path = webroot_path

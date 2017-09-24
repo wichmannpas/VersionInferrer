@@ -46,7 +46,7 @@ class SqliteBackend(GenericDatabaseBackend):
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 src_path TEXT NOT NULL,
                 webroot_path TEXT NOT NULL,
-                checksum TEXT NOT NULL
+                checksum BINARY NOT NULL
             )
             ''')
             cursor.execute('''
