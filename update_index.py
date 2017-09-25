@@ -19,8 +19,9 @@ logging.basicConfig(format=LOG_FORMAT, level=logging.INFO)
 def handle_definition(
         definition: SoftwareDefinition,
         indexed_versions: Set[SoftwareVersion]) -> Tuple[
-            Set[Model], SoftwareVersion]:
+            Set[Model], Set[SoftwareVersion], bool]:
     store_objects = set()
+    versions = set()
     changed = False
 
     logging.info('handling software package %s', definition.software_package)
@@ -31,6 +32,7 @@ def handle_definition(
     logging.info('%d versions not yet indexed for %s', len(missing_versions), str(definition.software_package))
     for step in range(min(len(missing_versions), STEP_LIMIT)):
         version = missing_versions.pop()
+        versions.add(version)
 
         try:
             BACKEND.store(version)
@@ -51,7 +53,7 @@ def handle_definition(
         except Exception:
             pass
 
-    return store_objects, version, changed
+    return store_objects, versions, changed
 
 
 while True:
@@ -67,7 +69,7 @@ while True:
             futures.add(
                 executor.submit(handle_definition, definition, indexed_versions))
         for future in futures:
-            store_objects, version, this_changed = future.result()
+            store_objects, versions, this_changed = future.result()
             if this_changed:
                 changed = True
             if store_objects:
@@ -75,6 +77,7 @@ while True:
                 logging.info('storing %d elements to backend', len(store_objects))
                 for element in store_objects:
                     BACKEND.store(element)
-            BACKEND.mark_indexed(version)
+            for version in versions:
+                BACKEND.mark_indexed(version)
     if not changed:
         break
