@@ -5,16 +5,42 @@ import requests
 from bs4 import BeautifulSoup, SoupStrainer
 
 from analysis.asset import Asset
+from backends.software_package import SoftwarePackage
 from base.checksum import calculate_checksum
-from settings import HTML_PARSER, HTML_RELEVANT_ELEMENTS, \
+from settings import BACKEND, HTML_PARSER, HTML_RELEVANT_ELEMENTS, \
     STATIC_FILE_EXTENSIONS, SUPPORTED_SCHEMAS
 
 
-def retrieve_included_assets(url: str) -> Set[Asset]:
-    """Retrieve specified url and fetch included static files."""
-    main_page = requests.get(url).text
+def extract_information(html_page: str) -> Set[SoftwarePackage]:
+    """Extract information from html source."""
+    result = set()
+
+    parsed = BeautifulSoup(
+        html_page,
+        HTML_PARSER)
+
+    # generator tag
+    generator_tags = parsed.find_all('meta', {'name': 'generator'})
+    if len(generator_tags) == 1:
+        # If none or multiple generator tags are found, that is not a
+        # reliable source
+        generator_tag = generator_tags[0].get('content')
+        if generator_tag:
+            components = generator_tag.split()
+            # TODO: Maybe there is already a version in the generator tag ...
+            # TODO: Therefore, do not throw non-first components away
+            # TODO: Software packages with spaces in name
+            matches = BACKEND.retrieve_packages_by_name(components[0])
+            for match in matches:
+                result.add(match)
+
+    return result
+
+
+def retrieve_included_assets(html_page: str) -> Set[Asset]:
+    """Fetch included static files from provided html page."""
     main_page = BeautifulSoup(
-        main_page,
+        html_page,
         HTML_PARSER,
         parse_only=SoupStrainer(
             HTML_RELEVANT_ELEMENTS))

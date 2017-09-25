@@ -19,6 +19,11 @@ class Backend(metaclass=ABCMeta):
         """Retrieve all versions using a static file with a specific checksum."""
 
     @abstractmethod
+    def retrieve_packages_by_name(
+            self, name: str) -> Set[SoftwarePackage]:
+        """Retrieve all available packages whose names are likely to name."""
+
+    @abstractmethod
     def retrieve_versions(
             self, software_package: SoftwarePackage,
             indexed_only: bool = True) -> Set[SoftwareVersion]:

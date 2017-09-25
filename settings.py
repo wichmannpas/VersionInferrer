@@ -1,9 +1,11 @@
+import logging
 import os
 
 
 # General settings
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FORMAT = '%(asctime)-15s: %(message)s'
+logging.basicConfig(format=LOG_FORMAT, level=logging.INFO)
 
 
 # Analysis

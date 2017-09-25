@@ -55,6 +55,23 @@ class GenericDatabaseBackend(Backend):
                 id=''' + self._operator + '''
             ''', (indexed, software_version_id,))
 
+    def retrieve_packages_by_name(
+            self, name: str) -> Set[SoftwarePackage]:
+        """Retrieve all available packages whose names are likely to name."""
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            SELECT
+                name,
+                vendor
+            FROM
+                software_package
+            WHERE
+                LOWER(name) LIKE LOWER(''' + self._operator + ''')
+            ''', (name,))
+            return {
+                SoftwarePackage(name=name, vendor=vendor)
+                for name, vendor in cursor.fetchall()}
+
     def retrieve_static_file_users_by_checksum(
             self, checksum: bytes) -> Set[SoftwareVersion]:
         """Retrieve all versions using a static file with a specific checksum."""

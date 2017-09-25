@@ -13,9 +13,6 @@ from indexing import indexing
 from settings import BACKEND, LOG_FORMAT, MAX_WORKERS, STEP_LIMIT
 
 
-logging.basicConfig(format=LOG_FORMAT, level=logging.INFO)
-
-
 def handle_definition(
         definition: SoftwareDefinition,
         indexed_versions: Set[SoftwareVersion]) -> Tuple[
