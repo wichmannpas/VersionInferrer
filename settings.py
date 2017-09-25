@@ -16,9 +16,9 @@ HTML_RELEVANT_ELEMENTS = [
     'script',
     'style',
 ]
-SUPPORTED_SCHEMAS = [
-    'http://',
-    'https://',
+SUPPORTED_SCHEMES = [
+    'http',
+    'https',
 ]
 
 

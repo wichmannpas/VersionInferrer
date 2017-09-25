@@ -1,14 +1,16 @@
+import os
 from typing import Set
 from urllib.parse import urlparse
 
 import requests
+from requests import Response
 from bs4 import BeautifulSoup, SoupStrainer
 
 from analysis.asset import Asset
 from backends.software_package import SoftwarePackage
 from base.checksum import calculate_checksum
 from settings import BACKEND, HTML_PARSER, HTML_RELEVANT_ELEMENTS, \
-    STATIC_FILE_EXTENSIONS, SUPPORTED_SCHEMAS
+    STATIC_FILE_EXTENSIONS, SUPPORTED_SCHEMES
 
 
 def extract_information(html_page: str) -> Set[SoftwarePackage]:
@@ -37,10 +39,10 @@ def extract_information(html_page: str) -> Set[SoftwarePackage]:
     return result
 
 
-def retrieve_included_assets(html_page: str) -> Set[Asset]:
+def retrieve_included_assets(response: Response) -> Set[Asset]:
     """Fetch included static files from provided html page."""
     main_page = BeautifulSoup(
-        html_page,
+        response.text,
         HTML_PARSER,
         parse_only=SoupStrainer(
             HTML_RELEVANT_ELEMENTS))
@@ -59,11 +61,14 @@ def retrieve_included_assets(html_page: str) -> Set[Asset]:
     assets = set()
     for referenced_url in referenced_urls:
         parsed_url = urlparse(referenced_url)
-        if not any(referenced_url.startswith(schema)
-                   for schema in SUPPORTED_SCHEMAS) or \
-            not any(parsed_url.path.endswith(extension)
-                    for extension in STATIC_FILE_EXTENSIONS):
+        if (parsed_url.scheme and
+                parsed_url.scheme not in SUPPORTED_SCHEMES) or \
+           not any(parsed_url.path.endswith(extension)
+                   for extension in STATIC_FILE_EXTENSIONS):
             continue
+        if not parsed_url.scheme:
+            # url is relative.
+            referenced_url = _join_url(response.url, referenced_url)
         assets.add(retrieve_asset(referenced_url))
 
     return assets
@@ -75,3 +80,17 @@ def retrieve_asset(url: str) -> Asset:
     return Asset(
         url,
         calculate_checksum(asset_content))
+
+
+def _join_url(*args) -> str:
+    """
+    Join multiple paths using os.path.join, remove leading slashes
+    before.
+    """
+    url = args[0]
+    if url.endswith('/'):
+        url = url[:-1]
+    return url + os.path.join(args[1], *(
+        arg[1:]
+        if arg.startswith('/') else arg
+        for arg in args[2:]))
