@@ -1,15 +1,12 @@
 import os
 
-from hashlib import blake2b
 from typing import List
 
 from backends.software_version import SoftwareVersion
 from backends.static_file import StaticFile
+from base.checksum import calculate_file_checksum
 from definitions.definition import SoftwareDefinition
 from settings import STATIC_FILE_EXTENSIONS
-
-
-BUFFER_SIZE = 8000000
 
 
 def collect_static_files(
@@ -48,7 +45,7 @@ def list_static_files(
                 webroot_path,
                 directory.replace(_join_paths(base_dir, src_path), '', 1),
                 file_name),
-            checksum=_calculate_checksum(
+            checksum=calculate_file_checksum(
                 os.path.join(base_dir, directory, file_name)))
         for directory, dirnames, file_names in os.walk(
             _join_paths(base_dir, src_path))
@@ -57,19 +54,6 @@ def list_static_files(
             file_name.lower().endswith(file_extension)
             for file_extension in STATIC_FILE_EXTENSIONS)
     ]
-
-
-def _calculate_checksum(file_path: str) -> bytes:
-    """Calculate a checksum for a file."""
-    hasher = blake2b()
-    with open(file_path, 'rb') as fh:
-        while True:
-            buf = fh.read(BUFFER_SIZE)
-            if not buf:
-                break
-            hasher.update(buf)
-
-    return hasher.digest()[:16]
 
 
 def _join_paths(*args):

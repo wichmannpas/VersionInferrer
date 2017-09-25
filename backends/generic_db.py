@@ -55,9 +55,45 @@ class GenericDatabaseBackend(Backend):
                 id=''' + self._operator + '''
             ''', (indexed, software_version_id,))
 
-    @abstractmethod
-    def _open_connection(self, *args, **kwargs):
-        """Open a connection to the database."""
+    def retrieve_static_file_users_by_checksum(
+            self, checksum: bytes) -> Set[SoftwareVersion]:
+        """Retrieve all versions using a static file with a specific checksum."""
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            SELECT
+                p.name,
+                p.vendor,
+                v.name,
+                v.internal_identifier
+            FROM
+                software_package p,
+                software_version v
+            WHERE
+                v.software_package_id = p.id AND
+                v.id IN
+                    (SELECT
+                         software_version_id
+                     FROM
+                         static_file_use
+                     WHERE
+                         static_file_id IN
+                             (SELECT
+                                  id
+                              FROM
+                                  static_file sf
+                              WHERE
+                                  sf.checksum=''' + self._operator + '''))
+            ''', (checksum,))
+            return {
+                SoftwareVersion(
+                    software_package=SoftwarePackage(
+                        name=p_name,
+                        vendor=p_vendor),
+                    name=v_name,
+                    internal_identifier=v_internal_identifier)
+                for p_name, p_vendor, v_name, v_internal_identifier
+                in cursor.fetchall()
+            }
 
     def retrieve_versions(
             self, software_package: SoftwarePackage,
@@ -264,3 +300,7 @@ class GenericDatabaseBackend(Backend):
                 static_file.webroot_path,
                 static_file.checksum))
         return self._get_id(static_file)
+
+    @abstractmethod
+    def _open_connection(self, *args, **kwargs):
+        """Open a connection to the database."""

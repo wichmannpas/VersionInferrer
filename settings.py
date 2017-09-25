@@ -6,6 +6,20 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FORMAT = '%(asctime)-15s: %(message)s'
 
 
+# Analysis
+HTML_PARSER = 'html.parser'
+HTML_RELEVANT_ELEMENTS = [
+    'a',  # i.e. directory indexes
+    'link',
+    'script',
+    'style',
+]
+SUPPORTED_SCHEMAS = [
+    'http://',
+    'https://',
+]
+
+
 # Backend
 from backends.postgresql import PostgresqlBackend
 BACKEND = PostgresqlBackend(host='127.0.0.1', database='ba', user='ba', password='ba')
