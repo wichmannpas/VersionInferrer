@@ -42,6 +42,7 @@ STATIC_FILE_EXTENSIONS = [
     '.jpeg',
     '.jpg',
     '.js',
+    '.json',
     '.png',
     '.scss',
     '.svg',
