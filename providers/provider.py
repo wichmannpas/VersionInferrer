@@ -1,6 +1,7 @@
 import os
 
 from abc import abstractmethod, ABCMeta
+from datetime import datetime
 from subprocess import call, check_output
 from typing import Callable, List, Set, Union
 
@@ -49,7 +50,8 @@ class Provider(metaclass=ABCMeta):
             command, cwd=cwd).decode()[:-1]
 
     def _get_software_version(
-            self, internal_identifier: str) -> Union[SoftwareVersion, None]:
+            self, internal_identifier: str,
+            release_date: datetime) -> Union[SoftwareVersion, None]:
         """Get a SoftwareVersion object from an internal identifier."""
         name = internal_identifier
         if self.version_name_derivator is not None:
@@ -57,4 +59,5 @@ class Provider(metaclass=ABCMeta):
         return SoftwareVersion(
             software_package=self.software_package,
             name=name,
-            internal_identifier=internal_identifier)
+            internal_identifier=internal_identifier,
+            release_date=release_date)

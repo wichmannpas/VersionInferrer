@@ -36,9 +36,10 @@ class SqliteBackend(GenericDatabaseBackend):
                 software_package_id INTEGER NOT NULL,
                 name TEXT NOT NULL,
                 internal_identifier TEXT NOT NULL,
+                release_date DATETIME,
                 indexed BOOLEAN DEFAULT 0,
                 FOREIGN KEY(software_package_id) REFERENCES software_package(id),
-                UNIQUE(software_package_id, name, internal_identifier)
+                UNIQUE(software_package_id, internal_identifier)
             )
             ''')
             cursor.execute('''

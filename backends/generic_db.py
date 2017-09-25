@@ -81,7 +81,8 @@ class GenericDatabaseBackend(Backend):
                 p.name,
                 p.vendor,
                 v.name,
-                v.internal_identifier
+                v.internal_identifier,
+                v.release_date
             FROM
                 software_package p,
                 software_version v
@@ -107,8 +108,10 @@ class GenericDatabaseBackend(Backend):
                         name=p_name,
                         vendor=p_vendor),
                     name=v_name,
-                    internal_identifier=v_internal_identifier)
-                for p_name, p_vendor, v_name, v_internal_identifier
+                    internal_identifier=v_internal_identifier,
+                    release_date=v_release_date)
+                for p_name, p_vendor, v_name, v_internal_identifier, \
+                    v_release_date
                 in cursor.fetchall()
             }
 
@@ -124,7 +127,8 @@ class GenericDatabaseBackend(Backend):
             query = '''
             SELECT
                 name,
-                internal_identifier
+                internal_identifier,
+                release_date
             FROM software_version
             WHERE
                 software_package_id=''' + self._operator + '''
@@ -133,8 +137,13 @@ class GenericDatabaseBackend(Backend):
                 query += 'AND indexed=' + self._true_value
             cursor.execute(query, (software_package_id,))
 
-            return set(SoftwareVersion(software_package, name=row[0], internal_identifier=row[1])
-                       for row in cursor.fetchall())
+            return {
+                SoftwareVersion(
+                    software_package,
+                    name=name,
+                    internal_identifier=internal_identifier,
+                    release_date=release_date)
+                for name, internal_identifier, release_date in cursor.fetchall()}
 
     def static_file_count(self, software_version: SoftwareVersion) -> int:
         """Get the count of static files used by a software version. """
@@ -206,12 +215,14 @@ class GenericDatabaseBackend(Backend):
                 INTO software_version (
                     software_package_id,
                     name,
-                    internal_identifier)
+                    internal_identifier,
+                    release_date)
                 VALUES (
                     ''' + self._operator + ''',
                     ''' + self._operator + ''',
+                    ''' + self._operator + ''',
                     ''' + self._operator + ''')
-                ''', (software_package_id, element.name, element.internal_identifier))
+                ''', (software_package_id, element.name, element.internal_identifier, element.release_date))
                 return True
         elif isinstance(element, StaticFile):
             software_version_id = self._get_id(
@@ -276,9 +287,8 @@ class GenericDatabaseBackend(Backend):
                 FROM software_version
                 WHERE
                     software_package_id=''' + self._operator + ''' AND
-                    name=''' + self._operator + ''' AND
                     internal_identifier=''' + self._operator + '''
-                ''', (software_package_id, element.name, element.internal_identifier))
+                ''', (software_package_id, element.internal_identifier))
                 row = cursor.fetchone()
                 return row[0] if row is not None else None
         elif isinstance(element, StaticFile):

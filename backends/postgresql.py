@@ -77,15 +77,23 @@ class PostgresqlBackend(GenericDatabaseBackend):
             INTO software_version (
                 software_package_id,
                 name,
-                internal_identifier)
+                internal_identifier,
+                release_date)
             VALUES (
-                %s,
-                %s,
-                %s)
-            ON CONFLICT (software_package_id, name, internal_identifier) DO UPDATE
-                SET software_package_id=software_version.software_package_id
+                %(software_package_id)s,
+                %(name)s,
+                %(internal_identifier)s,
+                %(release_date)s)
+            ON CONFLICT (software_package_id, internal_identifier) DO UPDATE
+                SET
+                    name=%(name)s, 
+                    release_date=%(release_date)s
             RETURNING id
-            ''', (software_package_id, software_version.name, software_version.internal_identifier))
+            ''', {
+                'software_package_id': software_package_id,
+                'name': software_version.name,
+                'internal_identifier': software_version.internal_identifier,
+                'release_date': software_version.release_date})
             return cursor.fetchone()[0]
 
     def _get_or_create_static_file(self, static_file: StaticFile) -> int:
@@ -140,9 +148,10 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 software_package_id INTEGER NOT NULL,
                 name TEXT NOT NULL,
                 internal_identifier TEXT NOT NULL,
+                release_date TIMESTAMP NOT NULL,
                 indexed BOOLEAN DEFAULT 'f',
                 FOREIGN KEY(software_package_id) REFERENCES software_package(id) ON DELETE CASCADE,
-                UNIQUE(software_package_id, name, internal_identifier)
+                UNIQUE(software_package_id, internal_identifier)
             )
             ''')
             cursor.execute('''

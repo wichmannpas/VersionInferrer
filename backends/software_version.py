@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from backends.model import Model
 from backends.software_package import SoftwarePackage
 
@@ -7,12 +9,14 @@ class SoftwareVersion(Model):
     software_package: SoftwarePackage
     name: str
     internal_identifier: str
+    release_date: datetime
 
     def __init__(self, software_package: SoftwarePackage, name: str,
-                 internal_identifier: str):
+                 internal_identifier: str, release_date: datetime):
         self.software_package = software_package
         self.name = name
         self.internal_identifier = internal_identifier
+        self.release_date = release_date
 
     def __str__(self) -> str:
         return '{} {}'.format(str(self.software_package), self.name)

@@ -1,5 +1,6 @@
 import os
 
+from datetime import datetime
 from subprocess import CalledProcessError
 from typing import Callable, List, Pattern, Set, Union
 
@@ -44,6 +45,12 @@ class GenericGitProvider(Provider):
         code = self._call_command(['git', 'reset', '--hard', git_object])
         if code != 0:
             raise GitException('checkout failed')
+
+    def _get_object_datetime(self, git_object: str) -> datetime:
+        """Retrieve the age of an object."""
+        raw_datetime = self._check_command(
+            ['git', 'log', '-1', '--format=%ai', git_object])
+        return datetime.strptime(raw_datetime, '%Y-%m-%d %H:%M:%S %z')
 
     def _init_repository(self):
         if self._check_cache_directory():
@@ -114,13 +121,16 @@ class GitTagProvider(GenericGitProvider):
             if self.exclude_pattern.match(tag):
                 return
 
+        release_date = self._get_object_datetime(tag)
+
         # Apply additional name derivation functions from superclasses
-        name = super()._get_software_version(name).name
+        name = super()._get_software_version(name, release_date).name
 
         return SoftwareVersion(
             software_package=self.software_package,
             name=name,
-            internal_identifier=internal_identifier)
+            internal_identifier=internal_identifier,
+            release_date=release_date)
 
 
 class GitException(Exception):
