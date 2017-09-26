@@ -175,3 +175,8 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 PRIMARY KEY(software_version_id, static_file_id)
             )
             ''')
+            cursor.execute('''
+            CREATE INDEX IF NOT EXISTS
+                static_file_use_static_file_id
+            ON static_file_use(static_file_id)
+            ''')
