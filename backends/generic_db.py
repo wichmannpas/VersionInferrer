@@ -83,9 +83,65 @@ class GenericDatabaseBackend(Backend):
         """
         return {
             (frozenset(self._retrieve_static_file_users(static_file_id)),
-             StaticFile(version, src_path, webroot_path, checksum))
+             StaticFile(
+                 version,
+                 src_path,
+                 webroot_path,
+                 self._unpack_binary(checksum)))
             for static_file_id, src_path, webroot_path, checksum
             in self._retrieve_static_files_by_version(version, max_users)}
+
+    def retrieve_static_files_popular_to_versions(
+            self, versions: Iterable[SoftwareVersion],
+            limit: int) -> Set[Tuple[Set[SoftwareVersion], StaticFile]]:
+        """
+        Get the static files most popular for versions.
+
+        Return a set of using versions (of specified versions) for every
+        retrieved static file.
+        """
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            SELECT
+                sf.id,
+                sf.src_path,
+                sf.webroot_path,
+                sf.checksum,
+                (SELECT
+                    COUNT(us.software_version_id)
+                 FROM
+                     static_file_use us
+                 WHERE
+                     us.static_file_id=sf.id AND
+                     us.software_version_id IN (''' +
+                     ', '.join([self._operator] * len(versions)) +
+                     ''')) vu
+                 FROM
+                     static_file sf
+                 WHERE
+                     EXISTS (
+                         SELECT
+                             1
+                         FROM
+                             static_file_use us
+                         WHERE
+                             us.static_file_id=sf.id)
+                 ORDER BY
+                     vu DESC
+                 LIMIT ''' + self._operator + '''
+            ''', tuple([self._get_id(version) for version in versions] + [limit]))
+            return {
+                (frozenset(user
+                           for user
+                           in self._retrieve_static_file_users(static_file_id)
+                           if user in versions),
+                 StaticFile(
+                     None,
+                     src_path,
+                     webroot_path,
+                     self._unpack_binary(checksum)))
+                for static_file_id, src_path, webroot_path, checksum, users
+                in cursor.fetchall()}
 
     def retrieve_static_files_unique_to_version(
             self, version: SoftwareVersion) -> Set[StaticFile]:
@@ -93,7 +149,11 @@ class GenericDatabaseBackend(Backend):
         Get all static files which are only used by the specified version.
         """
         return {
-            StaticFile(version, src_path, webroot_path, checksum)
+            StaticFile(
+                version,
+                src_path,
+                webroot_path,
+                self._unpack_binary(checksum))
             for static_file_id, src_path, webroot_path, checksum
             in self._retrieve_static_files_by_version(version)}
 
@@ -370,7 +430,7 @@ class GenericDatabaseBackend(Backend):
             return self._get_software_versions_from_raw(cursor.fetchall())
 
     def _retrieve_static_files_by_version(self, version: SoftwareVersion,
-            max_users: int = 1):
+                                          max_users: int = 1):
         with closing(self._connection.cursor()) as cursor:
             cursor.execute('''
             SELECT
@@ -419,3 +479,14 @@ class GenericDatabaseBackend(Backend):
     @abstractmethod
     def _open_connection(self, *args, **kwargs):
         """Open a connection to the database."""
+
+    @staticmethod
+    def _unpack_binary(obj) -> bytes:
+        """
+        Unpack binary object and return bytes.
+
+        It is bytes for sqlite and memoryview for psycopg2, for example.
+        """
+        if isinstance(obj, memoryview):
+            return obj.tobytes()
+        return obj

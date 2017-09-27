@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABCMeta
-from typing import Set, Tuple
+from typing import Iterable, Set, Tuple
 
 from backends.model import Model
 from backends.software_package import SoftwarePackage
@@ -32,6 +32,17 @@ class Backend(metaclass=ABCMeta):
         in total by max_users versions or less.
 
         Return a set of using versions for every retrieved static file.
+        """
+
+    @abstractmethod
+    def retrieve_static_files_popular_to_versions(
+            self, versions: Iterable[SoftwareVersion],
+            limit: int) -> Set[Tuple[Set[SoftwareVersion], StaticFile]]:
+        """
+        Get the static files most popular for versions.
+
+        Return a set of using versions (of specified versions) for every
+        retrieved static file.
         """
 
     @abstractmethod
