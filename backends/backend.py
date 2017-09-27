@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABCMeta
-from typing import Set
+from typing import Set, Tuple
 
 from backends.model import Model
 from backends.software_package import SoftwarePackage
@@ -14,14 +14,32 @@ class Backend(metaclass=ABCMeta):
         """Update a software version fully indexed flag."""
 
     @abstractmethod
+    def retrieve_packages_by_name(
+            self, name: str) -> Set[SoftwarePackage]:
+        """Retrieve all available packages whose names are likely to name."""
+
+    @abstractmethod
     def retrieve_static_file_users_by_checksum(
             self, checksum: bytes) -> Set[SoftwareVersion]:
         """Retrieve all versions using a static file with a specific checksum."""
 
     @abstractmethod
-    def retrieve_packages_by_name(
-            self, name: str) -> Set[SoftwarePackage]:
-        """Retrieve all available packages whose names are likely to name."""
+    def retrieve_static_files_almost_unique_to_version(
+            self, version: SoftwareVersion,
+            max_users: int) -> Set[Tuple[Set[SoftwareVersion], StaticFile]]:
+        """
+        Get all static files which are used by the specified version and
+        in total by max_users versions or less.
+
+        Return a set of using versions for every retrieved static file.
+        """
+
+    @abstractmethod
+    def retrieve_static_files_unique_to_version(
+            self, version: SoftwareVersion) -> Set[StaticFile]:
+        """
+        Get all static files which are only used by the specified version.
+        """
 
     @abstractmethod
     def retrieve_versions(

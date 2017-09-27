@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from contextlib import closing
-from typing import Set, Union
+from typing import Iterable, Set, Tuple, Union
 
 from backends.backend import Backend, BackendException
 from backends.model import Model
@@ -72,6 +72,31 @@ class GenericDatabaseBackend(Backend):
                 SoftwarePackage(name=name, vendor=vendor)
                 for name, vendor in cursor.fetchall()}
 
+    def retrieve_static_files_almost_unique_to_version(
+            self, version: SoftwareVersion,
+            max_users: int) -> Set[Tuple[Set[SoftwareVersion], StaticFile]]:
+        """
+        Get all static files which are used by the specified version and
+        in total by max_users versions or less.
+
+        Return a set of using versions for every retrieved static file.
+        """
+        return {
+            (frozenset(self._retrieve_static_file_users(static_file_id)),
+             StaticFile(version, src_path, webroot_path, checksum))
+            for static_file_id, src_path, webroot_path, checksum
+            in self._retrieve_static_files_by_version(version, max_users)}
+
+    def retrieve_static_files_unique_to_version(
+            self, version: SoftwareVersion) -> Set[StaticFile]:
+        """
+        Get all static files which are only used by the specified version.
+        """
+        return {
+            StaticFile(version, src_path, webroot_path, checksum)
+            for static_file_id, src_path, webroot_path, checksum
+            in self._retrieve_static_files_by_version(version)}
+
     def retrieve_static_file_users_by_checksum(
             self, checksum: bytes) -> Set[SoftwareVersion]:
         """Retrieve all versions using a static file with a specific checksum."""
@@ -102,18 +127,7 @@ class GenericDatabaseBackend(Backend):
                               WHERE
                                   sf.checksum=''' + self._operator + '''))
             ''', (checksum,))
-            return {
-                SoftwareVersion(
-                    software_package=SoftwarePackage(
-                        name=p_name,
-                        vendor=p_vendor),
-                    name=v_name,
-                    internal_identifier=v_internal_identifier,
-                    release_date=v_release_date)
-                for p_name, p_vendor, v_name, v_internal_identifier, \
-                    v_release_date
-                in cursor.fetchall()
-            }
+            return self._get_software_versions_from_raw(cursor.fetchall())
 
     def retrieve_versions(
             self, software_package: SoftwarePackage,
@@ -222,7 +236,8 @@ class GenericDatabaseBackend(Backend):
                     ''' + self._operator + ''',
                     ''' + self._operator + ''',
                     ''' + self._operator + ''')
-                ''', (software_package_id, element.name, element.internal_identifier, element.release_date))
+                ''', (software_package_id, element.name,
+                      element.internal_identifier, element.release_date))
                 return True
         elif isinstance(element, StaticFile):
             software_version_id = self._get_id(
@@ -327,6 +342,79 @@ class GenericDatabaseBackend(Backend):
                 static_file.webroot_path,
                 static_file.checksum))
         return self._get_id(static_file)
+
+    def _retrieve_static_file_users(
+            self, static_file_id: int) -> Set[SoftwareVersion]:
+        """Retrieve all versions using a static file."""
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            SELECT
+                p.name,
+                p.vendor,
+                v.name,
+                v.internal_identifier,
+                v.release_date
+            FROM
+                software_package p,
+                software_version v
+            WHERE
+                v.software_package_id = p.id AND
+                v.id IN
+                    (SELECT
+                         software_version_id
+                     FROM
+                         static_file_use
+                     WHERE
+                         static_file_id=''' + self._operator + ''')
+            ''', (static_file_id,))
+            return self._get_software_versions_from_raw(cursor.fetchall())
+
+    def _retrieve_static_files_by_version(self, version: SoftwareVersion,
+            max_users: int = 1):
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            SELECT
+                sf.id,
+                sf.src_path,
+                sf.webroot_path,
+                sf.checksum
+            FROM
+                static_file sf
+            WHERE
+                EXISTS
+                (
+                    SELECT
+                        1
+                    FROM
+                        static_file_use us
+                    WHERE
+                        us.static_file_id=sf.id AND
+                        us.software_version_id=''' + self._operator + ''') AND
+                (
+                    SELECT
+                        COUNT(us.software_version_id)
+                    FROM
+                        static_file_use us
+                    WHERE
+                        us.static_file_id=sf.id)<=''' + self._operator + '''
+            ''', (self._get_id(version), max_users))
+            return cursor.fetchall()
+
+    @staticmethod
+    def _get_software_versions_from_raw(
+            raw: Iterable) -> Set[SoftwareVersion]:
+        return {
+            SoftwareVersion(
+                software_package=SoftwarePackage(
+                    name=p_name,
+                    vendor=p_vendor),
+                name=v_name,
+                internal_identifier=v_internal_identifier,
+                release_date=v_release_date)
+            for p_name, p_vendor, v_name, v_internal_identifier, \
+                v_release_date
+            in raw
+        }
 
     @abstractmethod
     def _open_connection(self, *args, **kwargs):
