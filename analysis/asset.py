@@ -1,11 +1,13 @@
-class Asset:
-    """Information about an asset from a website."""
-    url: str
-    checksum: bytes
+from analysis.resource import Resource
+from base.checksum import calculate_checksum
 
-    def __init__(self, url: str, checksum: bytes):
-        self.url = url
-        self.checksum = checksum
+
+class Asset(Resource):
+    """
+    An asset from a website.
+    """
+    def __init__(self, url: str):
+        super().__init__(url)
 
     def __eq__(self, other) -> bool:
         return self.url == other.url and \
@@ -14,8 +16,16 @@ class Asset:
     def __hash__(self) -> int:
         return hash(self.url) + hash(self.checksum)
 
-    def __repr__(self) -> str:
-        return "<{} '{}'>".format(str(self.__class__.__name__), str(self))
+    @property
+    def checksum(self) -> bytes:
+        """The checksum of the current assets content."""
+        if not self.retrieved:
+            self.retrieve()
 
-    def __str__(self) -> str:
-        return self.url
+        return self._checksum
+
+    def retrieve(self):
+        """Retrieve the asset and calculate its checksum."""
+        super().retrieve()
+
+        self._checksum = calculate_checksum(self.content)
