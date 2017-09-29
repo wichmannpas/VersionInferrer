@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup, SoupStrainer
 from analysis.asset import Asset
 from backends.software_package import SoftwarePackage
 from base.checksum import calculate_checksum
+from base.utils import join_url
 from settings import BACKEND, HTML_PARSER, HTML_RELEVANT_ELEMENTS, \
     STATIC_FILE_EXTENSIONS, SUPPORTED_SCHEMES
 
@@ -68,7 +69,7 @@ def retrieve_included_assets(response: Response) -> Set[Asset]:
             continue
         if not parsed_url.scheme:
             # url is relative.
-            referenced_url = _join_url(response.url, referenced_url)
+            referenced_url = join_url(response.url, referenced_url)
         assets.add(retrieve_asset(referenced_url))
 
     return assets
@@ -80,17 +81,3 @@ def retrieve_asset(url: str) -> Asset:
     return Asset(
         url,
         calculate_checksum(asset_content))
-
-
-def _join_url(*args) -> str:
-    """
-    Join multiple paths using os.path.join, remove leading slashes
-    before.
-    """
-    url = args[0]
-    if url.endswith('/'):
-        url = url[:-1]
-    return url + os.path.join(args[1], *(
-        arg[1:]
-        if arg.startswith('/') else arg
-        for arg in args[2:]))

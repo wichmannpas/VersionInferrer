@@ -5,6 +5,7 @@ from typing import List
 from backends.software_version import SoftwareVersion
 from backends.static_file import StaticFile
 from base.checksum import calculate_file_checksum
+from base.utils import join_paths
 from definitions.definition import SoftwareDefinition
 from settings import STATIC_FILE_EXTENSIONS
 
@@ -38,30 +39,19 @@ def list_static_files(
     return [
         StaticFile(
             software_version=software_version,
-            src_path=_join_paths(
+            src_path=join_paths(
                 directory.replace(base_dir, '', 1),
                 file_name),
-            webroot_path=_join_paths(
+            webroot_path=join_paths(
                 webroot_path,
-                directory.replace(_join_paths(base_dir, src_path), '', 1),
+                directory.replace(join_paths(base_dir, src_path), '', 1),
                 file_name),
             checksum=calculate_file_checksum(
                 os.path.join(base_dir, directory, file_name)))
         for directory, dirnames, file_names in os.walk(
-            _join_paths(base_dir, src_path))
+            join_paths(base_dir, src_path))
         for file_name in file_names
         if any(
             file_name.lower().endswith(file_extension)
             for file_extension in STATIC_FILE_EXTENSIONS)
     ]
-
-
-def _join_paths(*args):
-    """
-    Join multiple paths using os.path.join, remove leading slashes
-    before.
-    """
-    return os.path.join(args[0], *(
-        arg[1:]
-        if arg.startswith('/') else arg
-        for arg in args[1:]))
