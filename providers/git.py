@@ -43,7 +43,7 @@ class GenericGitProvider(Provider):
         self._refresh_repository()
 
         # clean all local changes
-        code = self._call_command(['git', 'clean', '-xdf'])
+        code = self._call_command(['git', 'clean', '-xd', '--force'])
 
         # force-reset to destination commit (unstaging staged changes)
         code = self._call_command(['git', 'reset', '--hard', git_object])
