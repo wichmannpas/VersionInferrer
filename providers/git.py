@@ -42,6 +42,10 @@ class GenericGitProvider(Provider):
         """Do a git checkout of specified git object."""
         self._refresh_repository()
 
+        # clean all local changes
+        code = self._call_command(['git', 'clean', '-xdf'])
+
+        # force-reset to destination commit (unstaging staged changes)
         code = self._call_command(['git', 'reset', '--hard', git_object])
         if code != 0:
             raise GitException('checkout failed')
