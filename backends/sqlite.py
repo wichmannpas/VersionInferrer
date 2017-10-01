@@ -51,6 +51,11 @@ class SqliteBackend(GenericDatabaseBackend):
             )
             ''')
             cursor.execute('''
+            CREATE INDEX IF NOT EXISTS
+                static_file_webroot_path
+            ON static_file(webroot_path)
+            ''')
+            cursor.execute('''
             CREATE TABLE IF NOT EXISTS static_file_use (
                 software_version_id INTEGER NOT NULL,
                 static_file_id INTEGER NOT NULL,
