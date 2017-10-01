@@ -4,7 +4,7 @@ from typing import Set, Union
 import requests
 from bs4 import BeautifulSoup
 
-from backends.software_package import SoftwarePackage
+from backends.software_version import SoftwareVersion
 from settings import BACKEND, HTML_PARSER
 
 
@@ -30,7 +30,7 @@ class Resource:
 
         return self._content
 
-    def extract_information(self) -> Set[SoftwarePackage]:
+    def extract_information(self) -> Set[SoftwareVersion]:
         """
         Extract information from resource text source.
         """
@@ -57,7 +57,7 @@ class Resource:
         return hasattr(self, '_content')
 
     @staticmethod
-    def _extract_generator_tag(parsed: BeautifulSoup) -> Set[SoftwarePackage]:
+    def _extract_generator_tag(parsed: BeautifulSoup) -> Set[SoftwareVersion]:
         """Extract information from generator tag."""
         generator_tags = parsed.find_all('meta', {'name': 'generator'})
         if len(generator_tags) != 1:
@@ -77,6 +77,18 @@ class Resource:
         # TODO: Software packages with spaces in name
         matches = BACKEND.retrieve_packages_by_name(components[0])
         for match in matches:
-            result.add(match)
+            versions = BACKEND.retrieve_versions(match)
+            matching_versions = versions.copy()
+            if len(components) > 1:
+                # generator tag might contain version information already.
+                for version in versions:
+                    if components[1].lower().strip() not in version.name.lower().strip():
+                        matching_versions.remove(version)
+                if not matching_versions:
+                    # not a single version matched
+                    matching_versions = versions
+            result.update(matching_versions)
+
+        logging.info('Generator tag suggests one of: %s', matching_versions)
 
         return result
