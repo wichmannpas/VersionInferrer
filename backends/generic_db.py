@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from contextlib import closing
-from typing import Iterable, Set, Tuple, Union
+from typing import Iterable, List, Set, Tuple, Union
 
 from backends.backend import Backend, BackendException
 from backends.model import Model
@@ -218,6 +218,54 @@ class GenericDatabaseBackend(Backend):
                     internal_identifier=internal_identifier,
                     release_date=release_date)
                 for name, internal_identifier, release_date in cursor.fetchall()}
+
+    def retrieve_webroot_paths_with_high_entropy(
+            self, software_versions: Set[SoftwareVersion],
+            limit: int) -> List[Tuple[str, int, int]]:
+        """
+        Retrieve a list of webroot paths which have a high entropy
+        among the specified software versions.
+
+        A 3-tuple of the webroot path, the number of users within
+        the set of versions, and the number of different checksums
+        is returned.
+        """
+        software_version_ids = set()
+        for version in software_versions:
+            version_id = self._get_id(version)
+            if version_id is None:
+                raise BackendException('software version not found')
+            software_version_ids.add(version_id)
+
+        if not software_version_ids:
+            # no versions to check.
+            return []
+
+        with closing(self._connection.cursor()) as cursor:
+            software_version_ids = tuple(software_version_ids)
+            query = '''
+            SELECT
+                sf.webroot_path,
+                COUNT(DISTINCT us.software_version_id) version_count,
+                COUNT(DISTINCT sf.checksum) checksum_count
+            FROM
+                static_file sf
+            JOIN
+                static_file_use us
+            ON
+                us.static_file_id=sf.id
+            WHERE
+                us.software_version_id IN ''' + self._operator + '''
+            GROUP BY
+                sf.webroot_path
+            ORDER BY
+                version_count DESC,
+                checksum_count DESC
+            LIMIT ''' + str(int(limit)) + '''
+            '''
+            cursor.execute(query, (software_version_ids,))
+
+            return cursor.fetchall()
 
     def static_file_count(self, software_version: SoftwareVersion) -> int:
         """Get the count of static files used by a software version. """

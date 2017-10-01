@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABCMeta
-from typing import Iterable, Set, Tuple
+from typing import Iterable, List, Set, Tuple
 
 from backends.model import Model
 from backends.software_package import SoftwarePackage
@@ -57,6 +57,19 @@ class Backend(metaclass=ABCMeta):
             self, software_package: SoftwarePackage,
             indexed_only: bool = True) -> Set[SoftwareVersion]:
         """Retrieve all available versions for specified software package."""
+
+    @abstractmethod
+    def retrieve_webroot_paths_with_high_entropy(
+            self, software_versions: Set[SoftwareVersion],
+            limit: int) -> List[Tuple[str, int, int]]:
+        """
+        Retrieve a list of webroot paths which have a high entropy
+        among the specified software versions.
+
+        A 3-tuple of the webroot path, the number of users within
+        the set of versions, and the number of different checksums
+        is returned.
+        """
 
     @abstractmethod
     def static_file_count(self, software_version: SoftwareVersion) -> int:
