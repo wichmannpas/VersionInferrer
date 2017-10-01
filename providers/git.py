@@ -74,7 +74,7 @@ class GenericGitProvider(Provider):
     def _refresh_repository(self):
         if not self._check_cache_directory():
             self._init_repository()
-        code = self._call_command(['git', 'fetch', 'origin'])
+        code = self._call_command(['git', 'fetch', 'origin', '--prune', '--tags', '--force'])
         if code != 0:
             raise GitException('refresh failed')
 
