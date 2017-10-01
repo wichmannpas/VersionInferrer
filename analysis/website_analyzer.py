@@ -30,25 +30,31 @@ class WebsiteAnalyzer:
 
         first_estimates = main_page.extract_information()
 
-        print(first_estimates)
-
         main_assets = self.retrieve_included_assets(main_page)
         candidates = set()
         for asset in main_assets:
             candidates.update(
                 BACKEND.retrieve_static_file_users_by_checksum(asset.checksum))
-        #print(candidates)
-        #print(len(candidates))
-        #for candidate in candidates:
-        #    static_assets = BACKEND.retrieve_static_files_unique_to_version(candidate)
-        #    print(static_assets)
 
-        print(len(candidates))
-        print(candidates)
+        logging.info('assets from primary page lead to candidates: %s', candidates)
 
-        loaded_assets = set()
-        loaded_static_files = set()
+        # TODO: do not just throw all of them together
+        candidates |= first_estimates
 
+        # TODO: make sure that no assets are fetched multiple times
+        assets_with_entropy = BACKEND.retrieve_webroot_paths_with_high_entropy(
+            candidates, 5)
+        print(assets_with_entropy)
+        for webroot_path, using_versions, different_cheksums in assets_with_entropy:
+            url = join_url(self.primary_url, webroot_path)
+            logging.info(
+                'Regarding path %s used by %s versions with '
+                '%s different revisions', webroot_path, using_versions,
+                different_cheksums)
+            self.retrieved_resources.add(Asset(url))
+
+
+        """
         print('using popular static files to reduce number of candidates')
         while True:
             popular = BACKEND.retrieve_static_files_popular_to_versions(
@@ -62,7 +68,7 @@ class WebsiteAnalyzer:
                     continue
                 changed = True
                 loaded_static_files.add(static_file)
-                asset_url = join_url(arguments.url, static_file.webroot_path)
+                asset_url = join_url(self.primary_url, static_file.webroot_path)
                 print('retrieving {}'.format(asset_url))
                 asset = Asset(asset_url)
 
@@ -76,6 +82,7 @@ class WebsiteAnalyzer:
 
             if not changed:
                 break
+        """
 
     def retrieve_included_assets(self, resource: Resource) -> Set[Asset]:
         """Retrieve the assets referenced from resource."""
