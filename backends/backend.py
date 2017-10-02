@@ -60,7 +60,7 @@ class Backend(metaclass=ABCMeta):
 
     @abstractmethod
     def retrieve_webroot_paths_with_high_entropy(
-            self, software_versions: Set[SoftwareVersion],
+            self, software_versions: Iterable[SoftwareVersion],
             limit: int) -> List[Tuple[str, int, int]]:
         """
         Retrieve a list of webroot paths which have a high entropy

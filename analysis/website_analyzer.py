@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Dict, FrozenSet, Set
+from typing import Dict, FrozenSet, List, Set
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup, SoupStrainer
@@ -25,81 +25,65 @@ class WebsiteAnalyzer:
         self.primary_url = primary_url
         self.retrieved_resources = set()
 
-    def analyze(self):
+    def analyze(
+            self,
+            max_iterations: int = 15,
+            guess_limit: int = 10,
+            assets_per_iteration: int = 8):
         """Analyze the website."""
         main_page = Resource(self.primary_url)
         self.retrieved_resources.add(main_page)
 
         first_estimates = main_page.extract_information()
 
-        main_assets = self.retrieve_included_assets(main_page)
-        candidates = set()
-        for asset in main_assets:
-            candidates.update(
-                BACKEND.retrieve_static_file_users_by_checksum(asset.checksum))
+        self.retrieve_included_assets(main_page)
 
-        logging.info('assets from primary page lead to candidates: %s', candidates)
+        # First iteration uses all first estimates as well as best
+        # guesses from main assets
+        guesses = [(estimate, 0) for estimate in first_estimates] + \
+            self.get_best_guesses(guess_limit)
+        logging.info('assets from primary page and first estimates lead to guesses: %s', guesses)
 
-        # TODO: do not just throw all of them together
-        candidates |= first_estimates
+        for iteration in range(max_iterations):
+            logging.info('starting iteration %s', iteration)
 
-        # TODO: make sure that no assets are fetched multiple times
-        assets_with_entropy = BACKEND.retrieve_webroot_paths_with_high_entropy(
-            candidates, 5)
-        print(assets_with_entropy)
-        for webroot_path, using_versions, different_cheksums in assets_with_entropy:
-            url = join_url(self.primary_url, webroot_path)
-            logging.info(
-                'Regarding path %s used by %s versions with '
-                '%s different revisions', webroot_path, using_versions,
-                different_cheksums)
-            self.retrieved_resources.add(Asset(url))
+            # TODO: make sure that no assets are fetched multiple times
+            # TODO: find some exclude mechanism for previous iteration's webroot paths
+            assets_with_entropy = BACKEND.retrieve_webroot_paths_with_high_entropy(
+                (guess[0] for guess in guesses), assets_per_iteration)
+            for webroot_path, using_versions, different_cheksums in assets_with_entropy:
+                url = join_url(self.primary_url, webroot_path)
+                logging.info(
+                    'Regarding path %s used by %s versions with '
+                    '%s different revisions', webroot_path, using_versions,
+                    different_cheksums)
+                self.retrieved_resources.add(Asset(url))
 
-        mapping = self.map_retrieved_assets_to_versions()
-        guesses = sorted(mapping.items(), key=lambda i: -i[1])
+            # TODO: stop if guess is clear enough
+            guesses = self.get_best_guesses(guess_limit)
+            logging.info('new guesses are %s', guesses)
 
-        logging.info('All guesses are %s', guesses)
+        if not guesses:
+            logging.warning('no guesses found')
+            return None
 
-        best_guess = guesses.pop(0)[0]
-        while best_guess is None:
-            if not guesses:
-                logging.warning('No guess found')
-                return None
-            best_guess = guesses.pop(0)[0]
-
+        best_guess = guesses[0][0]
         logging.info('Best guess is %s', best_guess)
 
         # TODO: Return something (define interface)
 
+    def get_best_guesses(self, limit: int) -> List[SoftwareVersion]:
         """
-        print('using popular static files to reduce number of candidates')
-        while True:
-            popular = BACKEND.retrieve_static_files_popular_to_versions(
-                candidates, limit=5)
-
-            # TODO: Do not assume that there are static files
-
-            changed = False
-            for using_versions, static_file in popular:
-                if static_file in loaded_static_files:
-                    continue
-                changed = True
-                loaded_static_files.add(static_file)
-                asset_url = join_url(self.primary_url, static_file.webroot_path)
-                print('retrieving {}'.format(asset_url))
-                asset = Asset(asset_url)
-
-                users = BACKEND.retrieve_static_file_users_by_checksum(
-                    asset.checksum)
-                print(users)
-
-                candidates &= users
-
-                print(candidates)
-
-            if not changed:
-                break
+        Extract the best guesses using the retrieved assets.
         """
+        guesses = sorted(
+            self.map_retrieved_assets_to_versions().items(),
+            key=lambda i: -i[1])
+        return [
+            guess
+            for guess in guesses[:limit]
+            if guess[0] is not None
+        ]
 
     def map_retrieved_assets_to_versions(self) -> Dict[SoftwareVersion, int]:
         """
@@ -117,7 +101,7 @@ class WebsiteAnalyzer:
                 result[version] += 1
         return dict(result)
 
-    def retrieve_included_assets(self, resource: Resource) -> Set[Asset]:
+    def retrieve_included_assets(self, resource: Resource):
         """Retrieve the assets referenced from resource."""
         parsed = BeautifulSoup(
             resource.content,
@@ -136,7 +120,6 @@ class WebsiteAnalyzer:
             if src:
                 referenced_urls.add(src)
 
-        assets = set()
         for referenced_url in referenced_urls:
             parsed_url = urlparse(referenced_url)
             if (parsed_url.scheme and
@@ -150,9 +133,6 @@ class WebsiteAnalyzer:
                 referenced_url = join_url(resource.url, referenced_url)
             asset = Asset(referenced_url)
             self.retrieved_resources.add(asset)
-            assets.add(asset)
-
-        return assets
 
     @property
     def retrieved_assets(self) -> FrozenSet[Asset]:
