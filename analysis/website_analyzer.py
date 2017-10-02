@@ -10,7 +10,8 @@ from analysis.resource import Resource
 from backends.software_version import SoftwareVersion
 from base.utils import join_url
 from settings import BACKEND, GUESS_MIN_DIFFERENCE, HTML_PARSER, \
-    HTML_RELEVANT_ELEMENTS, STATIC_FILE_EXTENSIONS, SUPPORTED_SCHEMES
+    HTML_RELEVANT_ELEMENTS, MIN_SUPPORT, STATIC_FILE_EXTENSIONS, \
+    SUPPORTED_SCHEMES
 
 
 class WebsiteAnalyzer:
@@ -85,8 +86,13 @@ class WebsiteAnalyzer:
             logging.warning('no guesses found')
             return None
 
-        best_guess = guesses[0][0]
-        logging.info('Best guess is %s', best_guess)
+        best_guess, matches = guesses[0]
+        support = matches / len(self.retrieved_assets)
+        logging.info('Best guess is %s (support %s)', best_guess, support)
+
+        if support < MIN_SUPPORT:
+            logging.warning('Support is too low. No usable result available.')
+            return None
 
         # TODO: Return something (define interface)
 

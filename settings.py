@@ -18,6 +18,7 @@ HTML_RELEVANT_ELEMENTS = [
     'script',
     'style',
 ]
+MIN_SUPPORT = 0.2
 SUPPORTED_SCHEMES = [
     'http',
     'https',
