@@ -39,6 +39,33 @@ class TestJoinPaths(TestCase):
 
 
 class TestJoinUrl(TestCase):
+    def test_absolute_urls(self):
+        self.assertEqual(
+            join_url('https://foo/', 'https://bar'),
+            'https://bar/')
+        self.assertEqual(
+            join_url('https://foo/', 'https://bar', 'baz'),
+            'https://bar/baz')
+        self.assertEqual(
+            join_url('https://foo/bar', '/baz'),
+            'https://foo/baz')
+
+    def test_leading_slash_stripping_within(self):
+        self.assertEqual(
+            join_url('https://foo/', '/bar', 'baz'),
+            'https://foo/bar/baz')
+        self.assertEqual(
+            join_url('https://foo/', '/bar', '/baz'),
+            'https://foo/bar/baz')
+
+    def test_relative_paths(self):
+        self.assertEqual(
+            join_url('https://foo/', 'bar', '..', 'baz'),
+            'https://foo/baz')
+        self.assertEqual(
+            join_url('https://foo/', 'bar/../baz'),
+            'https://foo/baz')
+
     def test_trailing_slash_stripping_within(self):
         self.assertEqual(
             join_url('https://foo'),
@@ -48,12 +75,4 @@ class TestJoinUrl(TestCase):
             'https://foo/')
         self.assertEqual(
             join_url('https://foo/', 'bar/', '/baz'),
-            'https://foo/bar/baz')
-
-    def test_leading_slash_stripping_within(self):
-        self.assertEqual(
-            join_url('https://foo/', '/bar', 'baz'),
-            'https://foo/bar/baz')
-        self.assertEqual(
-            join_url('https://foo/', '/bar', '/baz'),
             'https://foo/bar/baz')
