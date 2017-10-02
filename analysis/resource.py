@@ -29,7 +29,7 @@ class Resource:
         if not self.retrieved:
             self.retrieve()
 
-        return self._content
+        return self._response.content
 
     def extract_information(self) -> Set[SoftwareVersion]:
         """
@@ -50,12 +50,19 @@ class Resource:
         """Retrieve the resource from its url."""
         logging.info('Retrieving resource %s', self.url)
 
-        self._content = requests.get(self.url).content
+        self._response = requests.get(self.url)
 
     @property
     def retrieved(self) -> bool:
         """Whether the resource has already been retrieved."""
-        return hasattr(self, '_content')
+        return hasattr(self, '_response')
+
+    @property
+    def status_code(self) -> bytes:
+        if not self.retrieved:
+            self.retrieve()
+
+        return self._response.status_code
 
     @property
     def webroot_path(self):

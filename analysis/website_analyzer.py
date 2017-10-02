@@ -12,6 +12,7 @@ from base.utils import join_url
 from settings import BACKEND, GUESS_MIN_DIFFERENCE, HTML_PARSER, \
     HTML_RELEVANT_ELEMENTS, STATIC_FILE_EXTENSIONS, SUPPORTED_SCHEMES
 
+
 class WebsiteAnalyzer:
     """
     This class provides the website analyzer. It is used to analyze a
@@ -58,13 +59,19 @@ class WebsiteAnalyzer:
                 exclude=(
                     asset.webroot_path
                     for asset in self.retrieved_assets))
+            status_codes = defaultdict(int)
             for webroot_path, using_versions, different_cheksums in assets_with_entropy:
                 url = join_url(self.primary_url, webroot_path)
                 logging.info(
                     'Regarding path %s used by %s versions with '
                     '%s different revisions', webroot_path, using_versions,
                     different_cheksums)
-                self.retrieved_resources.add(Asset(url))
+                asset = Asset(url)
+                status_codes[asset.status_code] += 1
+                self.retrieved_resources.add(asset)
+            if 200 not in status_codes:
+                logging.info('no asset could be retrieved in this iteration.')
+                break
 
             guesses = self.get_best_guesses(guess_limit)
             logging.info('new guesses are %s', guesses)
