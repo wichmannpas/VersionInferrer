@@ -14,6 +14,8 @@ def analyze(arguments: Namespace):
         guess_limit=arguments.guess_limit,
         assets_per_iteration=arguments.assets_per_iteration)
 
+    print(analyzer.get_statistics())
+
 
 if __name__ == '__main__':
     parser = ArgumentParser()

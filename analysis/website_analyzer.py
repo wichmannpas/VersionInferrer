@@ -109,6 +109,13 @@ class WebsiteAnalyzer:
             if guess[0] is not None
         ]
 
+    def get_statistics(self) -> dict:
+        """Get statistics about the current analyzer instance."""
+        return {
+            'retrieved_assets_count': len(self.retrieved_assets),
+            'retrieved_resources_count': len(self.retrieved_resources),
+        }
+
     def map_retrieved_assets_to_versions(self) -> Dict[SoftwareVersion, int]:
         """
         Create a dictionary mapping from every software version to the number
