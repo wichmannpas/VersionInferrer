@@ -6,9 +6,6 @@ class Asset(Resource):
     """
     An asset from a website.
     """
-    def __init__(self, url: str):
-        super().__init__(url)
-
     def __eq__(self, other) -> bool:
         return self.url == other.url and \
             self.checksum == other.checksum
