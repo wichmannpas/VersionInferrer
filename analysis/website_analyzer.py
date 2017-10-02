@@ -9,8 +9,8 @@ from analysis.asset import Asset
 from analysis.resource import Resource
 from backends.software_version import SoftwareVersion
 from base.utils import join_url
-from settings import BACKEND, HTML_PARSER, HTML_RELEVANT_ELEMENTS, \
-    STATIC_FILE_EXTENSIONS, SUPPORTED_SCHEMES
+from settings import BACKEND, GUESS_MIN_DIFFERENCE, HTML_PARSER, \
+    HTML_RELEVANT_ELEMENTS, STATIC_FILE_EXTENSIONS, SUPPORTED_SCHEMES
 
 class WebsiteAnalyzer:
     """
@@ -64,6 +64,10 @@ class WebsiteAnalyzer:
                 self.retrieved_resources.add(Asset(url))
 
             # TODO: stop if guess is clear enough
+            if (len(guesses) <= 1 or
+                    guesses[0][1] - guesses[1][1] >= GUESS_MIN_DIFFERENCE):
+                logging.info('stopping iterations early.')
+                break
             guesses = self.get_best_guesses(guess_limit)
             logging.info('new guesses are %s', guesses)
 

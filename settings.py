@@ -10,6 +10,7 @@ logging.basicConfig(format=LOG_FORMAT, level=logging.INFO)
 
 
 # Analysis
+GUESS_MIN_DIFFERENCE = 5  # The minimum difference of best guess
 HTML_PARSER = 'html.parser'
 HTML_RELEVANT_ELEMENTS = [
     'a',  # i.e. directory indexes
