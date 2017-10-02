@@ -221,7 +221,7 @@ class GenericDatabaseBackend(Backend):
 
     def retrieve_webroot_paths_with_high_entropy(
             self, software_versions: Iterable[SoftwareVersion],
-            limit: int) -> List[Tuple[str, int, int]]:
+            limit: int, exclude: Iterable[str] = '') -> List[Tuple[str, int, int]]:
         """
         Retrieve a list of webroot paths which have a high entropy
         among the specified software versions.
@@ -243,6 +243,7 @@ class GenericDatabaseBackend(Backend):
 
         with closing(self._connection.cursor()) as cursor:
             software_version_ids = tuple(software_version_ids)
+            params = [software_version_ids]
             query = '''
             SELECT
                 sf.webroot_path,
@@ -256,6 +257,12 @@ class GenericDatabaseBackend(Backend):
                 us.static_file_id=sf.id
             WHERE
                 us.software_version_id IN ''' + self._operator + '''
+            '''
+            exclude = tuple(exclude)
+            if exclude:
+                query += 'AND sf.webroot_path NOT IN ' + self._operator
+                params.append(exclude)
+            query += '''
             GROUP BY
                 sf.webroot_path
             ORDER BY
@@ -263,7 +270,7 @@ class GenericDatabaseBackend(Backend):
                 checksum_count DESC
             LIMIT ''' + str(int(limit)) + '''
             '''
-            cursor.execute(query, (software_version_ids,))
+            cursor.execute(query, tuple(params))
 
             return cursor.fetchall()
 

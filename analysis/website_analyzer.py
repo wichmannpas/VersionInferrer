@@ -52,9 +52,12 @@ class WebsiteAnalyzer:
                 return None
 
             # TODO: make sure that no assets are fetched multiple times
-            # TODO: find some exclude mechanism for previous iteration's webroot paths
             assets_with_entropy = BACKEND.retrieve_webroot_paths_with_high_entropy(
-                (guess[0] for guess in guesses), assets_per_iteration)
+                software_versions=(guess[0] for guess in guesses),
+                limit=assets_per_iteration,
+                exclude=(
+                    asset.webroot_path
+                    for asset in self.retrieved_assets))
             for webroot_path, using_versions, different_cheksums in assets_with_entropy:
                 url = join_url(self.primary_url, webroot_path)
                 logging.info(
@@ -63,13 +66,13 @@ class WebsiteAnalyzer:
                     different_cheksums)
                 self.retrieved_resources.add(Asset(url))
 
-            # TODO: stop if guess is clear enough
+            guesses = self.get_best_guesses(guess_limit)
+            logging.info('new guesses are %s', guesses)
+
             if (len(guesses) <= 1 or
                     guesses[0][1] - guesses[1][1] >= GUESS_MIN_DIFFERENCE):
                 logging.info('stopping iterations early.')
                 break
-            guesses = self.get_best_guesses(guess_limit)
-            logging.info('new guesses are %s', guesses)
 
         if not guesses:
             logging.warning('no guesses found')

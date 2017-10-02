@@ -1,5 +1,6 @@
 import logging
 from typing import Set, Union
+from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -55,6 +56,13 @@ class Resource:
     def retrieved(self) -> bool:
         """Whether the resource has already been retrieved."""
         return hasattr(self, '_content')
+
+    @property
+    def webroot_path(self):
+        """Get the webroot path of this asset."""
+        # TODO: Add support for subdirs And similar
+        url = urlparse(self.url)
+        return url.path
 
     @staticmethod
     def _extract_generator_tag(parsed: BeautifulSoup) -> Set[SoftwareVersion]:
