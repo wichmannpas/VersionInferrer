@@ -1,11 +1,13 @@
 import logging
-from typing import FrozenSet, Set
+from collections import defaultdict
+from typing import Dict, FrozenSet, Set
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup, SoupStrainer
 
 from analysis.asset import Asset
 from analysis.resource import Resource
+from backends.software_version import SoftwareVersion
 from base.utils import join_url
 from settings import BACKEND, HTML_PARSER, HTML_RELEVANT_ELEMENTS, \
     STATIC_FILE_EXTENSIONS, SUPPORTED_SCHEMES
@@ -53,6 +55,21 @@ class WebsiteAnalyzer:
                 different_cheksums)
             self.retrieved_resources.add(Asset(url))
 
+        mapping = self.map_retrieved_assets_to_versions()
+        guesses = sorted(mapping.items(), key=lambda i: -i[1])
+
+        logging.info('All guesses are %s', guesses)
+
+        best_guess = guesses.pop(0)[0]
+        while best_guess is None:
+            if not guesses:
+                logging.warning('No guess found')
+                return None
+            best_guess = guesses.pop(0)[0]
+
+        logging.info('Best guess is %s', best_guess)
+
+        # TODO: Return something (define interface)
 
         """
         print('using popular static files to reduce number of candidates')
@@ -83,6 +100,22 @@ class WebsiteAnalyzer:
             if not changed:
                 break
         """
+
+    def map_retrieved_assets_to_versions(self) -> Dict[SoftwareVersion, int]:
+        """
+        Create a dictionary mapping from every software version to the number
+        of retrieved assets which are in use by it.
+        """
+        # TODO: not only bare counts are interesting, but mutual matches etc.
+        # Therefore, find a better modeling strategy
+        result = defaultdict(int)
+        for asset in self.retrieved_assets:
+            if not asset.using_versions:
+                result[None] += 1
+                continue
+            for version in asset.using_versions:
+                result[version] += 1
+        return dict(result)
 
     def retrieve_included_assets(self, resource: Resource) -> Set[Asset]:
         """Retrieve the assets referenced from resource."""
@@ -115,7 +148,9 @@ class WebsiteAnalyzer:
                 # url is relative.
                 # TODO: relative to webroot?
                 referenced_url = join_url(resource.url, referenced_url)
-            assets.add(Asset(referenced_url))
+            asset = Asset(referenced_url)
+            self.retrieved_resources.add(asset)
+            assets.add(asset)
 
         return assets
 
