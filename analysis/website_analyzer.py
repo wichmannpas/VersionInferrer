@@ -87,7 +87,7 @@ class WebsiteAnalyzer:
             return None
 
         best_guess, matches = guesses[0]
-        support = matches / len(self.retrieved_assets)
+        support = matches / len(self.matchable_retrieved_assets)
         logging.info('Best guess is %s (support %s)', best_guess, support)
 
         if support < MIN_SUPPORT:
@@ -131,6 +131,14 @@ class WebsiteAnalyzer:
             for version in asset.using_versions:
                 result[version] += 1
         return dict(result)
+
+    @property
+    def matchable_retrieved_assets(self) -> FrozenSet[Asset]:
+        """Filter the retrieved resources for matchable assets."""
+        return frozenset(
+            asset
+            for asset in self.retrieved_resources
+            if isinstance(asset, Asset) and asset.using_versions)
 
     def retrieve_included_assets(self, resource: Resource):
         """Retrieve the assets referenced from resource."""
