@@ -47,6 +47,10 @@ class WebsiteAnalyzer:
         for iteration in range(max_iterations):
             logging.info('starting iteration %s', iteration)
 
+            if not guesses:
+                logging.error('no guesses left. Cannot continue.')
+                return None
+
             # TODO: make sure that no assets are fetched multiple times
             # TODO: find some exclude mechanism for previous iteration's webroot paths
             assets_with_entropy = BACKEND.retrieve_webroot_paths_with_high_entropy(
