@@ -10,6 +10,8 @@ class StaticFile(metaclass=ABCMeta):
     determine whether a file is a static file (of a specific type).
     """
     USUAL_FILE_NAME_EXTENSIONS: List[str]
+    USE_FOR_ANALYSIS: bool
+    USE_FOR_INDEX: bool
 
     file_name: str
     raw_content: bytes
