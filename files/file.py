@@ -1,6 +1,8 @@
 from abc import abstractproperty, ABCMeta
 from typing import List
 
+from base.checksum import calculate_checksum
+
 
 class File(metaclass=ABCMeta):
     """
@@ -24,6 +26,15 @@ class File(metaclass=ABCMeta):
             raise ValueError(
                 'not a static file of type {}'.format(self.__class__.__name__)
             )
+
+    @property
+    def checksum(self) -> bytes:
+        """
+        Calculate the checksum of the normalized content.
+
+        Does not necessarily utilize the same method for all file types.
+        """
+        return calculate_checksum(self.normalized_content)
 
     @property
     def has_usual_file_name_extension(self) -> bool:

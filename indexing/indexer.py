@@ -1,16 +1,16 @@
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Set, Tuple
+from typing import Iterable, List, Set
 
 from backends.model import Model
 from backends.software_version import SoftwareVersion
 from backends.static_file import StaticFile
-from base.checksum import calculate_file_checksum
 from base.utils import join_paths
 from definitions.definition import SoftwareDefinition
 from definitions import definitions
-from settings import BACKEND, LOG_FORMAT, STATIC_FILE_EXTENSIONS
+from files import file_types_for_index
+from settings import BACKEND, STATIC_FILE_EXTENSIONS
 
 
 class Indexer:
@@ -50,11 +50,14 @@ class Indexer:
         changed = False
 
         logging.info('handling software package %s', definition.software_package)
-        
+
         available_versions = definition.provider.get_versions()
 
         missing_versions = available_versions - indexed_versions
-        logging.info('%d versions not yet indexed for %s', len(missing_versions), str(definition.software_package))
+        logging.info(
+            '%d versions not yet indexed for %s',
+            len(missing_versions),
+            str(definition.software_package))
         for version in missing_versions:
             self._store_to_backend(version)
 
@@ -79,7 +82,7 @@ class Indexer:
         static_files = []
         for webroot_path, src_path in definition.path_map.items():
             static_files.extend(
-                self.list_static_file_paths(
+                self.iterate_static_file_paths(
                     version,
                     definition.provider.cache_directory,
                     webroot_path,
@@ -92,15 +95,33 @@ class Indexer:
         ]
 
 
-    def list_static_file_paths(
+    def iterate_static_file_paths(
             self, software_version: SoftwareVersion, base_dir: str,
-            webroot_path: str, src_path: str) -> List[str]:
+            webroot_path: str, src_path: str) -> Iterable[str]:
         """
-        Generate a list of all static file paths within base_dir using
+        Get the paths of all static files within base_dir using
         src_path and webroot_path mapping.
         """
-        return [
-            StaticFile(
+        for directory, file_name in (
+                (directory, file_name)
+                for directory, dir_names, file_names in os.walk(join_paths(
+                        base_dir, src_path))
+                for file_name in file_names):
+            full_path = os.path.join(base_dir, directory, file_name)
+            with open(full_path, 'rb') as fdes:
+                raw_content = fdes.read()
+
+            file = None
+            for file_type in file_types_for_index:
+                try:
+                    file = file_type(file_name, raw_content)
+                except ValueError:
+                    continue
+            if file is None:
+                # Not a file of any matching type.
+                continue
+
+            yield StaticFile(
                 software_version=software_version,
                 src_path=join_paths(
                     directory.replace(base_dir, '', 1),
@@ -109,15 +130,7 @@ class Indexer:
                     webroot_path,
                     directory.replace(join_paths(base_dir, src_path), '', 1),
                     file_name),
-                checksum=calculate_file_checksum(
-                    os.path.join(base_dir, directory, file_name)))
-            for directory, dirnames, file_names in os.walk(
-                join_paths(base_dir, src_path))
-            for file_name in file_names
-            if any(
-                file_name.lower().endswith(file_extension)
-                for file_extension in STATIC_FILE_EXTENSIONS)
-        ]
+                checksum=file.checksum)
 
     def _store_to_backend(self, obj: Model):
         """Store an object to the database."""
