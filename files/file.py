@@ -1,5 +1,5 @@
 from abc import abstractproperty, ABCMeta
-from typing import List
+from typing import List, Union
 
 from base.checksum import calculate_checksum
 
@@ -18,7 +18,7 @@ class File(metaclass=ABCMeta):
     file_name: str
     raw_content: bytes
 
-    def __init__(self, file_name: str, raw_content: bytes):
+    def __init__(self, file_name: str, raw_content: Union[bytes, None]):
         self.file_name = file_name
         self.raw_content = raw_content
 
@@ -34,13 +34,20 @@ class File(metaclass=ABCMeta):
         return self.file_name
 
     @property
-    def checksum(self) -> bytes:
+    def checksum(self) -> Union[bytes, None]:
         """
         Calculate the checksum of the normalized content.
 
         Does not necessarily utilize the same method for all file types.
         """
+        if not self.content_available:
+            return None
         return calculate_checksum(self.normalized_content)
+
+    @property
+    def content_available(self) -> bool:
+        """Whether the content of the file is available for analysis."""
+        return self.raw_content is not None
 
     @property
     def has_usual_file_name_extension(self) -> bool:
@@ -54,7 +61,7 @@ class File(metaclass=ABCMeta):
         """Whether the current instance is a static file of this type."""
 
     @abstractproperty
-    def normalized_content(self) -> bytes:
+    def normalized_content(self) -> Union[bytes, None]:
         """
         The content of this static file normalized for this file type.
         """

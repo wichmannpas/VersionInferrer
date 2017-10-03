@@ -1,3 +1,5 @@
+from typing import Union
+
 from files.file import File
 
 
@@ -17,7 +19,7 @@ class JsonFile(File):
         return self.has_usual_file_name_extension
 
     @property
-    def normalized_content(self) -> bytes:
+    def normalized_content(self) -> Union[bytes, None]:
         """
         The content of this static file normalized for this file type.
         """
