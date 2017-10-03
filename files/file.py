@@ -27,6 +27,12 @@ class File(metaclass=ABCMeta):
                 'not a static file of type {}'.format(self.__class__.__name__)
             )
 
+    def __repr__(self) -> str:
+        return "<{} '{}'>".format(str(self.__class__.__name__), str(self))
+
+    def __str__(self) -> str:
+        return self.file_name
+
     @property
     def checksum(self) -> bytes:
         """
