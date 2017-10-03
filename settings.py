@@ -38,7 +38,6 @@ CACHE_DIR = os.path.join(BASE_DIR, 'cache')
 
 
 # Indexing
-MAX_WORKERS = 16
 STATIC_FILE_EXTENSIONS = [
     '.css',
     '.gif',
@@ -53,4 +52,3 @@ STATIC_FILE_EXTENSIONS = [
     '.ttf',
     '.txt',
 ]
-STEP_LIMIT = 1000
