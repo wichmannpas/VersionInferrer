@@ -1,16 +1,16 @@
-from staticfiles.static_file import StaticFile
+from files.file import File
 
 
-class TextFile(StaticFile):
+class HtmlFile(File):
     """
-    A plain text file.
+    An html file.
     """
     USUAL_FILE_NAME_EXTENSIONS = [
-        'md',
-        'rst',
-        'txt',
+        'htm',
+        'html',
+        'xhtml',
     ]
-    USE_FOR_ANALYSIS = True
+    USE_FOR_ANALYSIS = False  # TODO: not globally a good choice!
     USE_FOR_INDEX = True
 
     @property

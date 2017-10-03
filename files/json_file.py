@@ -1,18 +1,12 @@
-from staticfiles.static_file import StaticFile
+from files.file import File
 
 
-class ImageFile(StaticFile):
+class JsonFile(File):
     """
-    An image file.
+    A JSON file.
     """
     USUAL_FILE_NAME_EXTENSIONS = [
-        'gif',
-        'ico',
-        'jpeg',
-        'jpg',
-        'png',
-        'svg',
-        # TODO: more?
+        'json',
     ]
     USE_FOR_ANALYSIS = True
     USE_FOR_INDEX = True

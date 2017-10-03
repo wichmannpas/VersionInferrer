@@ -1,13 +1,18 @@
-from staticfiles.static_file import StaticFile
+from files.file import File
 
 
-class FontFile(StaticFile):
+class ImageFile(File):
     """
-    A font file.
+    An image file.
     """
     USUAL_FILE_NAME_EXTENSIONS = [
-        'ttf',
-        # TODO: there are more!
+        'gif',
+        'ico',
+        'jpeg',
+        'jpg',
+        'png',
+        'svg',
+        # TODO: more?
     ]
     USE_FOR_ANALYSIS = True
     USE_FOR_INDEX = True

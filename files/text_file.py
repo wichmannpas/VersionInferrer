@@ -1,12 +1,14 @@
-from staticfiles.static_file import StaticFile
+from files.file import File
 
 
-class JavascriptFile(StaticFile):
+class TextFile(File):
     """
-    A JavaScript file.
+    A plain text file.
     """
     USUAL_FILE_NAME_EXTENSIONS = [
-        'js',
+        'md',
+        'rst',
+        'txt',
     ]
     USE_FOR_ANALYSIS = True
     USE_FOR_INDEX = True

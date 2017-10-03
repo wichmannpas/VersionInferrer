@@ -2,7 +2,7 @@ from abc import abstractproperty, ABCMeta
 from typing import List
 
 
-class StaticFile(metaclass=ABCMeta):
+class File(metaclass=ABCMeta):
     """
     This is the abstract base class for a static file of a specific type.
 

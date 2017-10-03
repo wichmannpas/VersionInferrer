@@ -1,12 +1,13 @@
-from staticfiles.static_file import StaticFile
+from files.file import File
 
 
-class JsonFile(StaticFile):
+class FontFile(File):
     """
-    A JSON file.
+    A font file.
     """
     USUAL_FILE_NAME_EXTENSIONS = [
-        'json',
+        'ttf',
+        # TODO: there are more!
     ]
     USE_FOR_ANALYSIS = True
     USE_FOR_INDEX = True

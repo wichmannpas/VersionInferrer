@@ -1,14 +1,12 @@
-from staticfiles.static_file import StaticFile
+from files.file import File
 
 
-class CssFile(StaticFile):
+class JavascriptFile(File):
     """
-    A CSS file.
+    A JavaScript file.
     """
     USUAL_FILE_NAME_EXTENSIONS = [
-        'css',
-        'less',
-        'scss',
+        'js',
     ]
     USE_FOR_ANALYSIS = True
     USE_FOR_INDEX = True

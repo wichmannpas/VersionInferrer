@@ -1,16 +1,16 @@
-from staticfiles.static_file import StaticFile
+from files.file import File
 
 
-class HtmlFile(StaticFile):
+class CssFile(File):
     """
-    An html file.
+    A CSS file.
     """
     USUAL_FILE_NAME_EXTENSIONS = [
-        'htm',
-        'html',
-        'xhtml',
+        'css',
+        'less',
+        'scss',
     ]
-    USE_FOR_ANALYSIS = False  # TODO: not globally a good choice!
+    USE_FOR_ANALYSIS = True
     USE_FOR_INDEX = True
 
     @property
