@@ -1,4 +1,5 @@
 import logging
+import os
 from collections import defaultdict
 from typing import Dict, FrozenSet, List, Set
 from urllib.parse import urlparse
@@ -9,9 +10,10 @@ from analysis.asset import Asset
 from analysis.resource import Resource
 from backends.software_version import SoftwareVersion
 from base.utils import join_url
+from files import file_types_for_analysis
 from settings import BACKEND, GUESS_MIN_DIFFERENCE, HTML_PARSER, \
     HTML_RELEVANT_ELEMENTS, MIN_ABSOLUTE_SUPPORT, MIN_SUPPORT, \
-    STATIC_FILE_EXTENSIONS, SUPPORTED_SCHEMES
+    SUPPORTED_SCHEMES
 
 
 class WebsiteAnalyzer:
@@ -162,10 +164,20 @@ class WebsiteAnalyzer:
         for referenced_url in referenced_urls:
             parsed_url = urlparse(referenced_url)
             if (parsed_url.scheme and
-                    parsed_url.scheme not in SUPPORTED_SCHEMES) or \
-               not any(parsed_url.path.endswith(extension)
-                       for extension in STATIC_FILE_EXTENSIONS):
+                    parsed_url.scheme not in SUPPORTED_SCHEMES):
                 continue
+            file_name = os.path.basename(referenced_url)
+            file = None
+            for file_type in file_types_for_analysis:
+                try:
+                    file = file_type(file_name, None)
+                    break
+                except ValueError:
+                    pass
+            if file is None:
+                # not a static file
+                continue
+
             if not parsed_url.scheme:
                 # url is relative.
                 # TODO: relative to webroot?

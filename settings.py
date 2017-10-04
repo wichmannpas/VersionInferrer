@@ -35,20 +35,3 @@ BACKEND = PostgresqlBackend(host='127.0.0.1', database='ba', user='ba', password
 
 # Cache
 CACHE_DIR = os.path.join(BASE_DIR, 'cache')
-
-
-# Indexing
-STATIC_FILE_EXTENSIONS = [
-    '.css',
-    '.gif',
-    '.html',
-    '.jpeg',
-    '.jpg',
-    '.js',
-    '.json',
-    '.png',
-    '.scss',
-    '.svg',
-    '.ttf',
-    '.txt',
-]
