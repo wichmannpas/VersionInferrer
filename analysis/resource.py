@@ -104,6 +104,6 @@ class Resource:
                     matching_versions = versions
             result.update(matching_versions)
 
-        logging.info('Generator tag suggests one of: %s', matching_versions)
+        logging.info('Generator tag suggests one of: %s', result)
 
         return result
