@@ -27,6 +27,15 @@ class File(metaclass=ABCMeta):
                 'not a static file of type {}'.format(self.__class__.__name__)
             )
 
+    def __eq__(self, other) -> bool:
+        return (
+            self.content_available and
+            self.__class__ == other.__class__ and
+            self.checksum == other.checksum)
+
+    def __hash__(self) -> int:
+        return hash(self.file_name) + hash(self.raw_content)
+
     def __repr__(self) -> str:
         return "<{} '{}'>".format(str(self.__class__.__name__), str(self))
 
