@@ -14,6 +14,7 @@ class Asset(Resource):
         return self.url == other.url and \
             self.checksum == other.checksum
 
+    # TODO: find a way to prevent fetching from webroot (i.e. comparison for set membership)
     def __hash__(self) -> int:
         return hash(self.url) + hash(self.checksum)
 

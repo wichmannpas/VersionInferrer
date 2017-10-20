@@ -41,6 +41,9 @@ class WebsiteAnalyzer:
         first_estimates = main_page.extract_information()
 
         self.retrieve_included_assets(main_page)
+        # regard favicon
+        self.retrieved_resources.add(Asset(
+            join_url(self.primary_url, 'favicon.ico')))
 
         # First iteration uses all first estimates as well as best
         # guesses from main assets
