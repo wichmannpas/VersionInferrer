@@ -37,9 +37,7 @@ class Resource:
         """
         result = set()
 
-        parsed = BeautifulSoup(
-            self.content,
-            HTML_PARSER)
+        parsed = self._parse()
 
         # generator tag
         result |= self._extract_generator_tag(parsed)
@@ -107,3 +105,8 @@ class Resource:
         logging.info('Generator tag suggests one of: %s', result)
 
         return result
+
+    def _parse(self) -> BeautifulSoup:
+        return BeautifulSoup(
+            self.content,
+            HTML_PARSER)
