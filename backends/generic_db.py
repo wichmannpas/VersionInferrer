@@ -55,6 +55,20 @@ class GenericDatabaseBackend(Backend):
                 id=''' + self._operator + '''
             ''', (indexed, software_version_id,))
 
+    def retrieve_packages(self) -> Set[SoftwarePackage]:
+        """Retrieve all available packages."""
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            SELECT
+                name,
+                vendor
+            FROM
+                software_package
+            ''', ())
+            return {
+                SoftwarePackage(name=name, vendor=vendor)
+                for name, vendor in cursor.fetchall()}
+
     def retrieve_packages_by_name(
             self, name: str) -> Set[SoftwarePackage]:
         """Retrieve all available packages whose names are likely to name."""

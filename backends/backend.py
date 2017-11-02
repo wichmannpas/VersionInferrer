@@ -14,6 +14,10 @@ class Backend(metaclass=ABCMeta):
         """Update a software version fully indexed flag."""
 
     @abstractmethod
+    def retrieve_packages(self) -> Set[SoftwarePackage]:
+        """Retrieve all available packages."""
+
+    @abstractmethod
     def retrieve_packages_by_name(
             self, name: str) -> Set[SoftwarePackage]:
         """Retrieve all available packages whose names are likely to name."""
