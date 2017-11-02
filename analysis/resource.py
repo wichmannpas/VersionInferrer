@@ -44,6 +44,14 @@ class Resource:
 
         return result
 
+    @property
+    def final_url(self) -> str:
+        """The final url, i.e., the url of the resource after all redirects."""
+        if not self.retrieved:
+            self.retrieve()
+
+        return self._response.url
+
     def retrieve(self):
         """Retrieve the resource from its url."""
         logging.info('Retrieving resource %s', self.url)
