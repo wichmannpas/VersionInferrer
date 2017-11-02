@@ -37,6 +37,9 @@ class WebsiteAnalyzer:
         """Analyze the website."""
         main_page = Resource(self.primary_url)
         self.retrieved_resources.add(main_page)
+        if main_page.final_url != self.primary_url:
+            logging.info('updating primary url to %s', main_page.final_url)
+            self.primary_url = main_page.final_url
 
         first_estimates = main_page.extract_information()
 
