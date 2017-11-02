@@ -18,7 +18,9 @@ software_packages = BACKEND.retrieve_packages()
 wappalyzer_apps = {}
 for app_name, app_data in apps.items():
     for package in software_packages:
-        if package.name.lower() == app_name.lower():
+        if (package.name.lower() == app_name.lower() or
+                any(name.lower() == app_name.lower()
+                    for name in package.alternative_names)):
             wappalyzer_apps[package] = app_data
 
 
