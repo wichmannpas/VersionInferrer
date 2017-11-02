@@ -56,14 +56,19 @@ class PostgresqlBackend(GenericDatabaseBackend):
             INSERT
             INTO software_package (
                 name,
-                vendor)
+                vendor,
+                alternative_names)
             VALUES (
+                %s,
                 %s,
                 %s)
             ON CONFLICT (name, vendor) DO UPDATE
                 SET vendor=software_package.vendor
             RETURNING id
-            ''', (software_package.name, software_package.vendor))
+            ''', (
+                software_package.name,
+                software_package.vendor,
+                self._pack_list(software_package.alternative_names)))
             return cursor.fetchone()[0]
 
     @use_cache
@@ -86,7 +91,7 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 %(release_date)s)
             ON CONFLICT (software_package_id, internal_identifier) DO UPDATE
                 SET
-                    name=%(name)s, 
+                    name=%(name)s,
                     release_date=%(release_date)s
             RETURNING id
             ''', {
@@ -136,6 +141,7 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 id INTEGER PRIMARY KEY DEFAULT NEXTVAL('software_package_id_seq') NOT NULL,
                 name TEXT NOT NULL,
                 vendor TEXT NOT NULL,
+                alternative_names TEXT[] DEFAULT '{}',
                 UNIQUE(name, vendor)
             )
             ''')
@@ -185,3 +191,13 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 static_file_use_static_file_id
             ON static_file_use(static_file_id)
             ''')
+
+    @staticmethod
+    def _pack_list(unpacked: list) -> object:
+        # postgres has native list support
+        return unpacked
+
+    @staticmethod
+    def _unpack_list(raw: object) -> list:
+        # postgres has native list support
+        return raw

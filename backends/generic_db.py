@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, abstractstaticmethod
 from contextlib import closing
 from typing import Iterable, List, Set, Tuple, Union
 
@@ -61,13 +61,16 @@ class GenericDatabaseBackend(Backend):
             cursor.execute('''
             SELECT
                 name,
-                vendor
+                vendor,
+                alternative_names
             FROM
                 software_package
             ''', ())
             return {
-                SoftwarePackage(name=name, vendor=vendor)
-                for name, vendor in cursor.fetchall()}
+                SoftwarePackage(
+                    name=name, vendor=vendor,
+                    alternative_names=self._unpack_list(alternative_names))
+                for name, vendor, alternative_names in cursor.fetchall()}
 
     def retrieve_packages_by_name(
             self, name: str) -> Set[SoftwarePackage]:
@@ -76,15 +79,18 @@ class GenericDatabaseBackend(Backend):
             cursor.execute('''
             SELECT
                 name,
-                vendor
+                vendor,
+                alternative_names
             FROM
                 software_package
             WHERE
                 LOWER(name) LIKE LOWER(''' + self._operator + ''')
             ''', (name,))
             return {
-                SoftwarePackage(name=name, vendor=vendor)
-                for name, vendor in cursor.fetchall()}
+                SoftwarePackage(
+                    name=name, vendor=vendor,
+                    alternative_names=self._unpack_list(alternative_names))
+                for name, vendor, alternative_names in cursor.fetchall()}
 
     def retrieve_static_files_almost_unique_to_version(
             self, version: SoftwareVersion,
@@ -179,6 +185,7 @@ class GenericDatabaseBackend(Backend):
             SELECT
                 p.name,
                 p.vendor,
+                p.alternative_names,
                 v.name,
                 v.internal_identifier,
                 v.release_date
@@ -325,11 +332,15 @@ class GenericDatabaseBackend(Backend):
                 INSERT
                 INTO software_package (
                     name,
-                    vendor)
+                    vendor,
+                    alternative_names)
                 VALUES (
                     ''' + self._operator + ''',
+                    ''' + self._operator + ''',
                     ''' + self._operator + ''')
-                ''', (element.name, element.vendor))
+                ''', (element.name,
+                      element.vendor,
+                      self._pack_list(element.alternative_names)))
                 return True
         elif isinstance(element, SoftwareVersion):
             software_package_id = self._get_id(element.software_package)
@@ -536,12 +547,13 @@ class GenericDatabaseBackend(Backend):
             SoftwareVersion(
                 software_package=SoftwarePackage(
                     name=p_name,
-                    vendor=p_vendor),
+                    vendor=p_vendor,
+                    alternative_names=self._unpack_list(p_alternative_names)),
                 name=v_name,
                 internal_identifier=v_internal_identifier,
                 release_date=v_release_date)
-            for p_name, p_vendor, v_name, v_internal_identifier, \
-                v_release_date
+            for p_name, p_vendor, p_alternative_names, v_name, \
+                v_internal_identifier, v_release_date
             in raw
         }
 
@@ -559,3 +571,11 @@ class GenericDatabaseBackend(Backend):
         if isinstance(obj, memoryview):
             return obj.tobytes()
         return obj
+
+    @abstractstaticmethod
+    def _pack_list(self, unpacked: list) -> object:
+        """Pack a list for the database."""
+
+    @abstractstaticmethod
+    def _unpack_list(self, raw: object) -> list:
+        """Unpack a list from the database."""

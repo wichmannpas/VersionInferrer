@@ -1,3 +1,4 @@
+import json
 import sqlite3
 
 from contextlib import closing
@@ -27,6 +28,7 @@ class SqliteBackend(GenericDatabaseBackend):
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 name TEXT NOT NULL,
                 vendor TEXT NOT NULL,
+                alternative_names TEXT DEFAULT '[]',
                 UNIQUE(name, vendor)
             )
             ''')
@@ -69,3 +71,11 @@ class SqliteBackend(GenericDatabaseBackend):
                 static_file_use_static_file_id
             ON static_file_use(static_file_id)
             ''')
+
+    @staticmethod
+    def _pack_list(unpacked: list) -> object:
+        return json.dumps(unpacked)
+
+    @staticmethod
+    def _unpack_list(raw: object) -> list:
+        return json.loads(raw)
