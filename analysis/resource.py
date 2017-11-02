@@ -58,6 +58,12 @@ class Resource:
 
         self._response = requests.get(self.url)
 
+        if self._response.status_code != 200:
+            logging.info(
+                'HTTP %s for %s',
+                self._response.status_code,
+                self.url)
+
     @property
     def retrieved(self) -> bool:
         """Whether the resource has already been retrieved."""
