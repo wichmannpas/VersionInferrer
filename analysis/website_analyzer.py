@@ -22,7 +22,6 @@ class WebsiteAnalyzer:
     single website to detect software packages and versions.
     """
     primary_url: str
-    retrieved_assets: FrozenSet[Asset]
     retrieved_resources: Set[Resource]
 
     def __init__(self, primary_url: str):
