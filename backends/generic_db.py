@@ -548,7 +548,7 @@ class GenericDatabaseBackend(Backend):
                 software_package=SoftwarePackage(
                     name=p_name,
                     vendor=p_vendor,
-                    alternative_names=self._unpack_list(p_alternative_names)),
+                    alternative_names=GenericDatabaseBackend._unpack_list(p_alternative_names)),
                 name=v_name,
                 internal_identifier=v_internal_identifier,
                 release_date=v_release_date)
@@ -573,9 +573,9 @@ class GenericDatabaseBackend(Backend):
         return obj
 
     @abstractstaticmethod
-    def _pack_list(self, unpacked: list) -> object:
+    def _pack_list(unpacked: list) -> object:
         """Pack a list for the database."""
 
     @abstractstaticmethod
-    def _unpack_list(self, raw: object) -> list:
+    def _unpack_list(raw: object) -> list:
         """Unpack a list from the database."""
