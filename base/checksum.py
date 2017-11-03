@@ -1,4 +1,8 @@
-from hashlib import blake2b
+try:
+    from hashlib import blake2b
+except ImportError:
+    # support for older python versions
+    from pyblake2 import blake2b
 
 
 BUFFER_SIZE = 8000000
