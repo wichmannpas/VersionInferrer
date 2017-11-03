@@ -13,7 +13,7 @@ class Resource:
     """
     A resource is any file which can be retrieved from a url.
     """
-    url: str
+    # url: str
 
     def __init__(self, url: str):
         self.url = url

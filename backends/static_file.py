@@ -4,10 +4,10 @@ from backends.software_version import SoftwareVersion
 
 class StaticFile(Model):
     """A (maybe not so) static file."""
-    software_version: SoftwareVersion
-    src_path: str
-    webroot_path: str
-    checksum: bytes
+    # software_version: SoftwareVersion
+    # src_path: str
+    # webroot_path: str
+    # checksum: bytes
 
     def __init__(self, software_version: SoftwareVersion, src_path:
                  str, webroot_path: str, checksum: bytes):

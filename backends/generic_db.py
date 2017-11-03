@@ -24,8 +24,8 @@ def use_cache(f):
 
 class GenericDatabaseBackend(Backend):
     """The backend handling the SQLite communication."""
-    _operator: str
-    _true_value: str
+    # _operator: str
+    # _true_value: str
 
     def __init__(self, *args, **kwargs):
         self._cache = {}

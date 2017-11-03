@@ -6,10 +6,10 @@ from backends.software_package import SoftwarePackage
 
 class SoftwareVersion(Model):
     """A specific version of a software package."""
-    software_package: SoftwarePackage
-    name: str
-    internal_identifier: str
-    release_date: datetime
+    # software_package: SoftwarePackage
+    # name: str
+    # internal_identifier: str
+    # release_date: datetime
 
     def __init__(self, software_package: SoftwarePackage, name: str,
                  internal_identifier: str, release_date: datetime):

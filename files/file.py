@@ -11,12 +11,12 @@ class File(metaclass=ABCMeta):
     The interface is used to pre- and post-process static files and to
     determine whether a file is a static file (of a specific type).
     """
-    USUAL_FILE_NAME_EXTENSIONS: List[str]
-    USE_FOR_ANALYSIS: bool
-    USE_FOR_INDEX: bool
+    # USUAL_FILE_NAME_EXTENSIONS: List[str]
+    # USE_FOR_ANALYSIS: bool
+    # USE_FOR_INDEX: bool
 
-    file_name: str
-    raw_content: bytes
+    # file_name: str
+    # raw_content: bytes
 
     def __init__(self, file_name: str, raw_content: Union[bytes, None]):
         self.file_name = file_name

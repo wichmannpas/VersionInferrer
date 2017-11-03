@@ -15,7 +15,7 @@ class SoftwareDefinition:
     ignore_paths can specify a Pattern object applied against the src paths
       of files.
     """
-    software_package: SoftwarePackage
-    provider: Provider
-    path_map: dict
-    ignore_paths: [Pattern, None]
+    # software_package: SoftwarePackage
+    # provider: Provider
+    # path_map: dict
+    # ignore_paths: [Pattern, None]

@@ -6,9 +6,9 @@ from backends.model import Model
 
 class SoftwarePackage(Model):
     """A software package."""
-    name: str
-    vendor: str
-    alternative_names: list
+    # name: str
+    # vendor: str
+    # alternative_names: list
 
     def __init__(self, name: str, vendor: str, alternative_names: Union[List, None] = None):
         self.name = name

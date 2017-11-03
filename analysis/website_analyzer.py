@@ -21,8 +21,8 @@ class WebsiteAnalyzer:
     This class provides the website analyzer. It is used to analyze a
     single website to detect software packages and versions.
     """
-    primary_url: str
-    retrieved_resources: Set[Resource]
+    # primary_url: str
+    # retrieved_resources: Set[Resource]
 
     def __init__(self, primary_url: str):
         self.primary_url = primary_url
