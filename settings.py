@@ -1,12 +1,9 @@
-import logging
 import os
+import sys
 
 
 # General settings
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_FORMAT = '%(asctime)-15s: %(message)s'
-# TODO: Do not globally set logging format
-logging.basicConfig(format=LOG_FORMAT, level=logging.INFO)
 
 
 # Analysis
@@ -27,11 +24,14 @@ SUPPORTED_SCHEMES = [
 
 
 # Backend
-from backends.postgresql import PostgresqlBackend
-BACKEND = PostgresqlBackend(host='127.0.0.1', database='ba', user='ba', password='ba')
-#from backends.sqlite import SqliteBackend
-#BACKEND = SqliteBackend(os.path.join(BASE_DIR, 'db.sqlite3'))
+from backends.sqlite import SqliteBackend
+BACKEND = SqliteBackend(os.path.join(BASE_DIR, 'db.sqlite3'))
 
 
 # Cache
 CACHE_DIR = os.path.join(BASE_DIR, 'cache')
+
+
+# import local settings if not in unit test mode
+if 'unittest' not in sys.modules:
+    from settings_local import *

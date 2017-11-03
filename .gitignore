@@ -6,5 +6,7 @@ htmlcov
 .coverage
 **.swp
 
+settings_local.py
+
 vendor/*
 !vendor/update
