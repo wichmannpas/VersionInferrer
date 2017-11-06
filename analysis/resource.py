@@ -77,6 +77,10 @@ class Resource:
         return self._response.status_code
 
     @property
+    def success(self) -> bool:
+        return self.status_code == 200
+
+    @property
     def webroot_path(self):
         """Get the webroot path of this asset."""
         # TODO: Add support for subdirs And similar

@@ -119,8 +119,9 @@ class WebsiteAnalyzer:
     def get_statistics(self) -> dict:
         """Get statistics about the current analyzer instance."""
         return {
-            'retrieved_assets_count': len(self.retrieved_assets),
-            'retrieved_resources_count': len(self.retrieved_resources),
+            'retrieved_assets_total': len(self.retrieved_assets),
+            'retrieved_resources_total': len(self.retrieved_resources),
+            'retrieved_resources_successful': sum(1 for res in self.retrieved_resources if res.success),
         }
 
     def map_retrieved_assets_to_versions(self) -> Dict[SoftwareVersion, int]:
