@@ -1,7 +1,7 @@
 import logging
 import os
 from collections import defaultdict
-from typing import Dict, FrozenSet, List, Set
+from typing import Dict, FrozenSet, List
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup, SoupStrainer
