@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 
+from analysis.wappalyzer_apps import wappalyzer_apps
 from backends.software_version import SoftwareVersion
 from settings import BACKEND, HTML_PARSER
 
@@ -41,6 +42,7 @@ class Resource:
 
         # generator tag
         result |= self._extract_generator_tag(parsed)
+        result |= self._extract_wappalyzer_information()
 
         return result
 
@@ -123,6 +125,18 @@ class Resource:
         logging.info('Generator tag suggests one of: %s', result)
 
         return result
+
+    def _extract_wappalyzer_information(self) -> Set[SoftwareVersion]:
+        """Use wappalyzer wrapper to get version information."""
+        # TODO: maybe expansion to version is a bad idea, because packages with a lot of versions get a higher weight than those with only a few releases
+        app_matches = set()
+        version_matches = set()
+        for app in wappalyzer_apps:
+            if app.matches(self._response):
+                app_matches.add(app)
+                version_matches |= BACKEND.retrieve_versions(app.software_package)
+        logging.info('wappalyzer suggests on of %s', app_matches)
+        return version_matches
 
     def _parse(self) -> BeautifulSoup:
         return BeautifulSoup(
