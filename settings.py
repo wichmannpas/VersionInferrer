@@ -34,4 +34,8 @@ CACHE_DIR = os.path.join(BASE_DIR, 'cache')
 
 # import local settings if not in unit test mode
 if 'unittest' not in sys.modules:
-    from settings_local import *
+    try:
+        from settings_local import *
+    except ImportError:
+        # local settings are optional
+        pass
