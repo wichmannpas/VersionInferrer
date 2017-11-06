@@ -70,7 +70,7 @@ class Resource:
         return hasattr(self, '_response')
 
     @property
-    def status_code(self) -> bytes:
+    def status_code(self) -> int:
         if not self.retrieved:
             self.retrieve()
 
