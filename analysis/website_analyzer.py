@@ -75,6 +75,9 @@ class WebsiteAnalyzer:
                     '%s different revisions', webroot_path, using_versions,
                     different_cheksums)
                 asset = Asset(url)
+                if asset in self.retrieved_resources:
+                    logging.info('asset already known, skipping')
+                    continue
                 status_codes[asset.status_code] += 1
                 self.retrieved_resources.add(asset)
             if 200 not in status_codes:
