@@ -7,7 +7,9 @@ class EtherpadLite(SoftwareDefinition):
     software_package = SoftwarePackage(
         name='Etherpad Lite',
         vendor='Ether',
-        alternative_names='Etherpad')
+        alternative_names=[
+            'Etherpad',
+        ])
     provider = GitTagProvider(
         software_package=software_package,
         url='https://github.com/ether/etherpad-lite.git'
