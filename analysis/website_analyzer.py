@@ -31,7 +31,7 @@ class WebsiteAnalyzer:
     def analyze(
             self,
             max_iterations: int = 15,
-            guess_limit: int = 10,
+            guess_limit: int = 7,
             assets_per_iteration: int = 8):
         """Analyze the website."""
         main_page = Resource(self.primary_url)

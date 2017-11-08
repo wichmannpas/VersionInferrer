@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('primary_url')
 
     parser.add_argument('-i', '--max-iterations', type=int, default=15)
-    parser.add_argument('-l', '--guess-limit', type=int, default=10)
+    parser.add_argument('-l', '--guess-limit', type=int, default=7)
     parser.add_argument('-a', '--assets-per-iteration', type=int, default=8)
 
     analyze(parser.parse_args())
