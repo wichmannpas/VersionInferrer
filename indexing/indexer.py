@@ -10,7 +10,7 @@ from base.utils import join_paths
 from definitions.definition import SoftwareDefinition
 from definitions import definitions
 from files import file_types_for_index
-from settings import BACKEND, STATIC_FILE_EXTENSIONS
+from settings import BACKEND
 
 
 class Indexer:
