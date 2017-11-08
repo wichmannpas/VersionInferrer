@@ -1,7 +1,7 @@
 import logging
 import os
 from collections import defaultdict
-from typing import Dict, FrozenSet, List
+from typing import Dict, FrozenSet, List, Tuple
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup, SoupStrainer
@@ -12,8 +12,9 @@ from backends.software_version import SoftwareVersion
 from base.utils import join_url
 from files import file_types_for_analysis
 from settings import BACKEND, GUESS_MIN_DIFFERENCE, HTML_PARSER, \
-    HTML_RELEVANT_ELEMENTS, MIN_ABSOLUTE_SUPPORT, MIN_SUPPORT, \
-    SUPPORTED_SCHEMES
+    HTML_RELEVANT_ELEMENTS, ITERATION_MIN_IMPROVEMENT, \
+    MAX_ITERATIONS_WITHOUT_IMPROVEMENT, MIN_ABSOLUTE_SUPPORT, \
+    MIN_SUPPORT, SUPPORTED_SCHEMES
 
 
 class WebsiteAnalyzer:
@@ -53,6 +54,7 @@ class WebsiteAnalyzer:
             self.get_best_guesses(guess_limit)
         logging.info('assets from primary page and first estimates lead to guesses: %s', guesses)
 
+        useless_iteration_count = 0
         for iteration in range(max_iterations):
             logging.info('starting iteration %s', iteration)
 
@@ -84,8 +86,24 @@ class WebsiteAnalyzer:
                 logging.info('no asset could be retrieved in this iteration.')
                 break
 
+            previous_decisiveness = self._guess_decisiveness(guesses)
             guesses = self.get_best_guesses(guess_limit)
             logging.info('new guesses are %s', guesses)
+
+            new_decisiveness = self._guess_decisiveness(guesses)
+            gain = new_decisiveness - previous_decisiveness
+            if gain < ITERATION_MIN_IMPROVEMENT:
+                logging.info(
+                    'decisiveness gain (%s) is less than minimum required',
+                    gain)
+                useless_iteration_count += 1
+                if useless_iteration_count >= MAX_ITERATIONS_WITHOUT_IMPROVEMENT:
+                    logging.info(
+                        'Reached max number of iterations without improvement (%s)',
+                        useless_iteration_count)
+                    break
+            else:
+                useless_iteration_count = 0
 
             if (len(guesses) <= 1 or
                     guesses[0][1] - guesses[1][1] >= GUESS_MIN_DIFFERENCE):
@@ -201,3 +219,13 @@ class WebsiteAnalyzer:
             asset
             for asset in self.retrieved_resources
             if isinstance(asset, Asset))
+
+    @staticmethod
+    def _guess_decisiveness(guesses: List[Tuple[SoftwareVersion, int]]) -> int:
+        """Calculate the difference from the best guess to other guesses."""
+        if len(guesses) < 2:
+            return 0
+        best_guess_count = guesses[0][1]
+        return sum(
+            best_guess_count - count
+            for guess, count in guesses[1:]) / len(guesses)
