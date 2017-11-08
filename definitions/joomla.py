@@ -8,7 +8,11 @@ from providers.git import GitTagProvider
 class Joomla(SoftwareDefinition):
     software_package = SoftwarePackage(
         name='Joomla! CMS™',
-        vendor='Open Source Matters')
+        vendor='Open Source Matters',
+        alternative_names=[
+            'Joomla!',
+            'Joomla',
+        ])
     provider = GitTagProvider(
         software_package=software_package,
         url='https://github.com/joomla/joomla-cms.git',
