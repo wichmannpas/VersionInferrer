@@ -108,6 +108,9 @@ class Indexer:
                         base_dir, src_path))
                 for file_name in file_names):
             full_path = os.path.join(base_dir, directory, file_name)
+            if not os.path.isfile(full_path) or os.path.islink(full_path):
+                # do not index non-regular files
+                continue
             with open(full_path, 'rb') as fdes:
                 raw_content = fdes.read()
 
