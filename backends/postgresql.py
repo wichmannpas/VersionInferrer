@@ -59,16 +59,17 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 vendor,
                 alternative_names)
             VALUES (
-                %s,
-                %s,
-                %s)
+                %(name)s,
+                %(vendor)s,
+                %(alternative_names)s)
             ON CONFLICT (name, vendor) DO UPDATE
-                SET vendor=software_package.vendor
+                SET alternative_names=%(alternative_names)s
             RETURNING id
-            ''', (
-                software_package.name,
-                software_package.vendor,
-                self._pack_list(software_package.alternative_names)))
+            ''', {
+                'name': software_package.name,
+                'vendor': software_package.vendor,
+                'alternative_names': self._pack_list(software_package.alternative_names),
+            })
             return cursor.fetchone()[0]
 
     @use_cache
