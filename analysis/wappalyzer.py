@@ -49,7 +49,7 @@ class WappalyzerApp:
     def _check_headers(self, response: Response) -> bool:
         header_patterns = self._raw_data.get('headers', {}).items()
         return any(
-            re.match(pat_value, value, re.IGNORECASE)
+            re.match(self._clean_pattern(pat_value), value, re.IGNORECASE)
             for pat_name, pat_value in header_patterns
             for name, value in response.headers.items()
             if pat_name.lower() == name.lower())
@@ -57,7 +57,8 @@ class WappalyzerApp:
     def _check_html(self, response: Response) -> bool:
         html_patterns = self._get_category('html')
         return any(
-            re.search(pattern, response.text, re.IGNORECASE)
+            re.search(
+                self._clean_pattern(pattern), response.text, re.IGNORECASE)
             for pattern in html_patterns)
 
     def _check_meta(self, response: Response) -> bool:
@@ -65,7 +66,7 @@ class WappalyzerApp:
         meta_tags = self._parse(response).find_all('meta')
         return any(
             re.match(
-                pat_content,
+                self._clean_pattern(pat_content),
                 tag.get('content', ''),
                 re.IGNORECASE)
             for pat_name, pat_content in meta_patterns
@@ -77,11 +78,18 @@ class WappalyzerApp:
         script_urls = self._parse(response).find_all('script')
         return any(
             re.search(
-                pattern,
+                self._clean_pattern(pattern),
                 script_tag.get('src', ''),
                 re.IGNORECASE)
             for pattern in script_patterns
             for script_tag in script_urls)
+
+    @staticmethod
+    def _clean_pattern(pattern: str) -> str:
+        """Clean a wappalyzer pattern."""
+        pattern = re.sub(r'\\;version:.*$', '', pattern)
+
+        return pattern
 
     def _get_category(self, category: str) -> List[str]:
         """
