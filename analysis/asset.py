@@ -11,12 +11,17 @@ class Asset(Resource):
     An asset from a website.
     """
     def __eq__(self, other) -> bool:
-        return self.url == other.url and \
-            self.checksum == other.checksum
+        if not super().__eq__(other):
+            return False
+        if self.retrieved:
+            return self.checksum == other.checksum
+        return True
 
-    # TODO: find a way to prevent fetching from webroot (i.e. comparison for set membership)
     def __hash__(self) -> int:
-        return hash(self.url) + hash(self.checksum)
+        base_hash = super().__hash__()
+        if self.retrieved:
+            return base_hash + hash(self.checksum)
+        return base_hash
 
     @property
     def checksum(self) -> bytes:
