@@ -24,17 +24,16 @@ class WebsiteAnalyzer:
     """
     # primary_url: str
     # retrieved_resources: Set[Resource]
+    max_iterations = 15
+    guess_limit = 7
+    min_assets_per_iteration = 2
+    max_assets_per_iteration = 8
 
     def __init__(self, primary_url: str):
         self.primary_url = primary_url
         self.retrieved_resources = set()
 
-    def analyze(
-            self,
-            max_iterations: int = 15,
-            guess_limit: int = 7,
-            min_assets_per_iteration: int = 2,
-            max_assets_per_iteration: int = 8):
+    def analyze(self):
         """Analyze the website."""
         main_page = Resource(self.primary_url)
         self.retrieved_resources.add(main_page)
@@ -52,72 +51,24 @@ class WebsiteAnalyzer:
         # First iteration uses all first estimates as well as best
         # guesses from main assets
         guesses = [(estimate, 0) for estimate in first_estimates] + \
-            self._get_best_guesses(guess_limit)
+            self._get_best_guesses(self.guess_limit)
         logging.info('assets from primary page and first estimates lead to guesses: %s', guesses)
 
-        useless_iteration_count = 0
-        for iteration in range(max_iterations):
-            logging.info('starting iteration %s', iteration)
-            useless = False
-
+        self._useless_iteration_count = 0
+        for iteration in range(self.max_iterations):
             if not guesses:
                 logging.error('no guesses left. Cannot continue.')
                 return None
 
-            # TODO: make sure that no assets are fetched multiple times
-            assets_with_entropy = BACKEND.retrieve_webroot_paths_with_high_entropy(
-                software_versions=(guess[0] for guess in guesses),
-                limit=max_assets_per_iteration,
-                exclude=(
-                    asset.webroot_path
-                    for asset in self.retrieved_assets))
-            status_codes = defaultdict(int)
-            iteration_matching_assets = 0
-            for webroot_path, using_versions, different_cheksums in assets_with_entropy:
-                if iteration_matching_assets >= min_assets_per_iteration:
-                    logging.info(
-                        'Reached min iteration assets count. Stop iteration.')
-                    break
-                url = join_url(self.primary_url, webroot_path)
+            self.iteration = iteration
+            guesses = self._iterate(guesses)
+            if self._useless_iteration_count >= MAX_ITERATIONS_WITHOUT_IMPROVEMENT:
                 logging.info(
-                    'Regarding path %s used by %s versions with '
-                    '%s different revisions', webroot_path, using_versions,
-                    different_cheksums)
-                asset = Asset(url)
-                if asset in self.retrieved_resources:
-                    logging.info('asset already known, skipping')
-                    continue
-                status_codes[asset.status_code] += 1
-                if asset.using_versions:
-                    iteration_matching_assets += 1
-                self.retrieved_resources.add(asset)
-            if 200 not in status_codes:
-                logging.info('no asset could be retrieved in this iteration.')
-                useless = True
+                    'Reached max number of iterations without improvement (%s)',
+                    self._useless_iteration_count)
+                break
 
-            previous_decisiveness = self._guess_decisiveness(guesses)
-            guesses = self._get_best_guesses(guess_limit)
-            logging.info('new guesses are %s', guesses)
-
-            new_decisiveness = self._guess_decisiveness(guesses)
-            gain = new_decisiveness - previous_decisiveness
-            if gain < ITERATION_MIN_IMPROVEMENT:
-                logging.info(
-                    'decisiveness gain (%s) is less than minimum required',
-                    gain)
-                useless = True
-
-            if useless:
-                logging.info('iteration was useless.')
-                useless_iteration_count += 1
-                if useless_iteration_count >= MAX_ITERATIONS_WITHOUT_IMPROVEMENT:
-                    logging.info(
-                        'Reached max number of iterations without improvement (%s)',
-                        useless_iteration_count)
-                    break
-            else:
-                useless_iteration_count = 0
-
+            # TODO: do not check min_difference here but use that var in _get_best_guesses
             if (len(guesses) <= 1 or
                     guesses[0][1] - guesses[1][1] >= GUESS_MIN_DIFFERENCE):
                 logging.info('stopping iterations early.')
@@ -177,6 +128,64 @@ class WebsiteAnalyzer:
             for guess in guesses[:limit]
             if guess[1] >= min_count
         ]
+
+    def _iterate(
+            self, guesses: List[Tuple[SoftwareVersion, int]]
+        ) -> List[Tuple[SoftwareVersion, int]]:
+        """Do an iteration."""
+        logging.info('starting iteration %s', self.iteration)
+        useless = False
+
+        # TODO: make sure that no assets are fetched multiple times
+        assets_with_entropy = BACKEND.retrieve_webroot_paths_with_high_entropy(
+            software_versions=(guess[0] for guess in guesses),
+            limit=self.max_assets_per_iteration,
+            exclude=(
+                asset.webroot_path
+                for asset in self.retrieved_assets))
+        status_codes = defaultdict(int)
+        iteration_matching_assets = 0
+        for webroot_path, using_versions, different_cheksums in assets_with_entropy:
+            if iteration_matching_assets >= self.min_assets_per_iteration:
+                logging.info(
+                    'Reached min iteration assets count. Stop iteration.')
+                break
+            url = join_url(self.primary_url, webroot_path)
+            logging.info(
+                'Regarding path %s used by %s versions with '
+                '%s different revisions', webroot_path, using_versions,
+                different_cheksums)
+            asset = Asset(url)
+            if asset in self.retrieved_resources:
+                logging.info('asset already known, skipping')
+                continue
+            status_codes[asset.status_code] += 1
+            if asset.using_versions:
+                iteration_matching_assets += 1
+            self.retrieved_resources.add(asset)
+        if 200 not in status_codes:
+            logging.info('no asset could be retrieved in this iteration.')
+            useless = True
+
+        previous_decisiveness = self._guess_decisiveness(guesses)
+        guesses = self._get_best_guesses(self.guess_limit)
+        logging.info('new guesses are %s', guesses)
+
+        new_decisiveness = self._guess_decisiveness(guesses)
+        gain = new_decisiveness - previous_decisiveness
+        if gain < ITERATION_MIN_IMPROVEMENT:
+            logging.info(
+                'decisiveness gain (%s) is less than minimum required',
+                gain)
+            useless = True
+
+        if useless:
+            logging.info('iteration was useless.')
+            self._useless_iteration_count += 1
+        else:
+            self._useless_iteration_count = 0
+
+        return guesses
 
     def _map_retrieved_assets_to_versions(self) -> Dict[SoftwareVersion, int]:
         """
