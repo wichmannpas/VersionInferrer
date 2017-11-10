@@ -12,7 +12,7 @@ class Nextcloud(SoftwareDefinition):
     provider = GitTagProvider(
         software_package=software_package,
         url='https://github.com/nextcloud/server.git',
-        version_pattern=re.compile(r'v(?P<version_name>(\d+)\.(\d+)\.(\d+))')
+        version_pattern=re.compile(r'^v(?P<version_name>(\d+)\.(\d+)\.(\d+))$')
     )
     path_map = {
         '/': '/',
