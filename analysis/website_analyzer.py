@@ -124,17 +124,23 @@ class WebsiteAnalyzer:
 
         # TODO: Return something (define interface)
 
-    def get_best_guesses(self, limit: int) -> List[SoftwareVersion]:
+    def get_best_guesses(self, limit: int) -> List[Tuple[SoftwareVersion, int]]:
         """
         Extract the best guesses using the retrieved assets.
         """
         guesses = sorted(
             self.map_retrieved_assets_to_versions().items(),
             key=lambda i: -i[1])
+
+        if not guesses:
+            return []
+
+        best_guess_count = guesses[0][1]
+        min_count = 0.7 * best_guess_count
         return [
             guess
             for guess in guesses[:limit]
-            if guess[0] is not None
+            if guess[0] is not None and guess[1] >= min_count
         ]
 
     def get_statistics(self) -> dict:
