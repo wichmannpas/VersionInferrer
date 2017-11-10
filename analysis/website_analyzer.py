@@ -11,10 +11,10 @@ from analysis.resource import Resource
 from backends.software_version import SoftwareVersion
 from base.utils import join_url
 from files import file_types_for_analysis
-from settings import BACKEND, GUESS_MIN_DIFFERENCE, HTML_PARSER, \
-    HTML_RELEVANT_ELEMENTS, ITERATION_MIN_IMPROVEMENT, \
-    MAX_ITERATIONS_WITHOUT_IMPROVEMENT, MIN_ABSOLUTE_SUPPORT, \
-    MIN_SUPPORT, SUPPORTED_SCHEMES
+from settings import BACKEND, GUESS_MIN_DIFFERENCE, \
+    GUESS_RELATIVE_DIFFERENCE, HTML_PARSER, HTML_RELEVANT_ELEMENTS, \
+    ITERATION_MIN_IMPROVEMENT, MAX_ITERATIONS_WITHOUT_IMPROVEMENT, \
+    MIN_ABSOLUTE_SUPPORT, MIN_SUPPORT, SUPPORTED_SCHEMES
 
 
 class WebsiteAnalyzer:
@@ -69,9 +69,8 @@ class WebsiteAnalyzer:
                 break
 
             # TODO: do not check min_difference here but use that var in _get_best_guesses
-            if (len(guesses) <= 1 or
-                    guesses[0][1] - guesses[1][1] >= GUESS_MIN_DIFFERENCE):
-                logging.info('stopping iterations early.')
+            if len(guesses) <= 1:
+                logging.info('no guesses to distinguish. stopping iterations early.')
                 break
 
         if not guesses:
@@ -122,7 +121,9 @@ class WebsiteAnalyzer:
             return []
 
         best_guess_count = guesses[0][1]
-        min_count = 0.7 * best_guess_count
+        min_count = min(
+            (1 - GUESS_RELATIVE_DIFFERENCE) * best_guess_count,
+            best_guess_count - GUESS_MIN_DIFFERENCE)
         return [
             guess
             for guess in guesses[:limit]

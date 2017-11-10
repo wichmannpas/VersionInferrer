@@ -7,7 +7,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 # Analysis
-GUESS_MIN_DIFFERENCE = 5  # The minimum difference of best guess
+GUESS_MIN_DIFFERENCE = 4  # The minimum difference of best guess to other guesses
+GUESS_RELATIVE_DIFFERENCE = 0.3  # The maximum ratio of guesses relative to the best guess to be considered
 HTML_PARSER = 'html.parser'
 HTML_RELEVANT_ELEMENTS = [
     'a',  # i.e. directory indexes
