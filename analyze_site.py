@@ -12,7 +12,8 @@ def analyze(arguments: Namespace):
     analyzer.analyze(
         max_iterations=arguments.max_iterations,
         guess_limit=arguments.guess_limit,
-        assets_per_iteration=arguments.assets_per_iteration)
+        min_assets_per_iteration=arguments.min_assets_per_iteration,
+        max_assets_per_iteration=arguments.max_assets_per_iteration)
 
     print(analyzer.get_statistics())
 
@@ -23,6 +24,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-i', '--max-iterations', type=int, default=15)
     parser.add_argument('-l', '--guess-limit', type=int, default=7)
-    parser.add_argument('-a', '--assets-per-iteration', type=int, default=8)
+    parser.add_argument('--min-assets-per-iteration', type=int, default=2)
+    parser.add_argument('--max-assets-per-iteration', type=int, default=8)
 
     analyze(parser.parse_args())

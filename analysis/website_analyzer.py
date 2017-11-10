@@ -33,7 +33,8 @@ class WebsiteAnalyzer:
             self,
             max_iterations: int = 15,
             guess_limit: int = 7,
-            assets_per_iteration: int = 8):
+            min_assets_per_iteration: int = 2,
+            max_assets_per_iteration: int = 8):
         """Analyze the website."""
         main_page = Resource(self.primary_url)
         self.retrieved_resources.add(main_page)
@@ -57,6 +58,7 @@ class WebsiteAnalyzer:
         useless_iteration_count = 0
         for iteration in range(max_iterations):
             logging.info('starting iteration %s', iteration)
+            useless = False
 
             if not guesses:
                 logging.error('no guesses left. Cannot continue.')
@@ -65,12 +67,17 @@ class WebsiteAnalyzer:
             # TODO: make sure that no assets are fetched multiple times
             assets_with_entropy = BACKEND.retrieve_webroot_paths_with_high_entropy(
                 software_versions=(guess[0] for guess in guesses),
-                limit=assets_per_iteration,
+                limit=max_assets_per_iteration,
                 exclude=(
                     asset.webroot_path
                     for asset in self.retrieved_assets))
             status_codes = defaultdict(int)
+            iteration_matching_assets = 0
             for webroot_path, using_versions, different_cheksums in assets_with_entropy:
+                if iteration_matching_assets >= min_assets_per_iteration:
+                    logging.info(
+                        'Reached min iteration assets count. Stop iteration.')
+                    break
                 url = join_url(self.primary_url, webroot_path)
                 logging.info(
                     'Regarding path %s used by %s versions with '
@@ -81,10 +88,12 @@ class WebsiteAnalyzer:
                     logging.info('asset already known, skipping')
                     continue
                 status_codes[asset.status_code] += 1
+                if asset.using_versions:
+                    iteration_matching_assets += 1
                 self.retrieved_resources.add(asset)
             if 200 not in status_codes:
                 logging.info('no asset could be retrieved in this iteration.')
-                break
+                useless = True
 
             previous_decisiveness = self._guess_decisiveness(guesses)
             guesses = self.get_best_guesses(guess_limit)
@@ -96,6 +105,10 @@ class WebsiteAnalyzer:
                 logging.info(
                     'decisiveness gain (%s) is less than minimum required',
                     gain)
+                useless = True
+
+            if useless:
+                logging.info('iteration was useless.')
                 useless_iteration_count += 1
                 if useless_iteration_count >= MAX_ITERATIONS_WITHOUT_IMPROVEMENT:
                     logging.info(
