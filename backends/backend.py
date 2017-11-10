@@ -9,6 +9,11 @@ from backends.static_file import StaticFile
 
 class Backend(metaclass=ABCMeta):
     """A base class for database backends."""
+
+    @abstractmethod
+    def delete(self, element: Model) -> bool:
+        """Delete an instance of a Model subclass."""
+
     @abstractmethod
     def mark_indexed(self, software_version: SoftwareVersion, indexed: bool = True) -> bool:
         """Update a software version fully indexed flag."""

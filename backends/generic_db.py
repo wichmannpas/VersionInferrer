@@ -38,6 +38,23 @@ class GenericDatabaseBackend(Backend):
     def __del__(self):
         self._connection.close()
 
+    def delete(self, element: Model) -> bool:
+        """Delete an instance of a Model subclass."""
+        if isinstance(element, SoftwareVersion):
+            id = self._get_id(element)
+            if id is None:
+                return False
+            with closing(self._connection.cursor()) as cursor:
+                # Check whether element exists
+                cursor.execute('''
+                DELETE
+                FROM software_version
+                WHERE
+                    id = ''' + self._operator + '''
+                ''', (id,))
+                return True
+        raise BackendException('unsupported model type for deletion')
+
     def mark_indexed(self, software_version: SoftwareVersion, indexed: bool = True) -> bool:
         """Mark a software version as fully indexed. """
         software_version_id = self._get_id(software_version)

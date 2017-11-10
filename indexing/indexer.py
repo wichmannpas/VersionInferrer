@@ -18,6 +18,44 @@ class Indexer:
     This class handles the indexing process.
     """
 
+    def gc_all(self):
+        """Garbace collect all definitions."""
+        logging.info('Garbage collecting all definitions.')
+        for definition in definitions:
+            indexed_versions = BACKEND.retrieve_versions(
+                definition.software_package)
+            self.gc_definition(definition, indexed_versions)
+
+    def gc_definition(
+            self, definition: SoftwareDefinition,
+            indexed_versions: Set[SoftwareVersion]) -> bool:
+        """
+        Garbace collect a specific definition, deleting versions
+        not available through provider.
+        Returns whether at least one version was deleted.
+        """
+        changed = False
+
+        logging.info(
+            'handling gc for software package %s', definition.software_package)
+
+        available_versions = definition.provider.get_versions()
+
+        gone_versions = indexed_versions - available_versions
+        if not gone_versions:
+            return False
+        logging.info(
+            '%d indexed versions not available anymore for %s',
+            len(gone_versions),
+            str(definition.software_package))
+        for version in gone_versions:
+            logging.info(
+                'deleting version %s of %s',
+                str(version),
+                str(definition.software_package))
+            self._delete_from_backend(version)
+        return True
+
     def index_all(self, max_workers: int = 16):
         """Index for all definitions."""
         while True:
@@ -134,6 +172,13 @@ class Indexer:
                     directory.replace(join_paths(base_dir, src_path), '', 1),
                     file_name),
                 checksum=file.checksum)
+
+    def _delete_from_backend(self, obj: Model):
+        """Store an object to the database."""
+        # TODO: re-implement fallback for backends not capable of multi-threading
+        #       (i.e., using mark_indexed as hoook or similar)
+
+        BACKEND.delete(obj)
 
     def _store_to_backend(self, obj: Model):
         """Store an object to the database."""
