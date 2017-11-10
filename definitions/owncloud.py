@@ -12,7 +12,7 @@ class OwnCloud(SoftwareDefinition):
     provider = GitTagProvider(
         software_package=software_package,
         url='https://github.com/owncloud/core.git',
-        version_pattern=re.compile(r'v(?P<version_name>.*)')
+        version_pattern=re.compile(r'v(?P<version_name>(\d+)\.(\d+)\.(\d+))')
     )
     path_map = {
         '/': '/',
