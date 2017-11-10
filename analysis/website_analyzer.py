@@ -128,9 +128,11 @@ class WebsiteAnalyzer:
         """
         Extract the best guesses using the retrieved assets.
         """
-        guesses = sorted(
-            self.map_retrieved_assets_to_versions().items(),
-            key=lambda i: -i[1])
+        guesses = sorted((
+            (version, count)
+            for version, count
+            in self.map_retrieved_assets_to_versions().items()
+            if version is not None), key=lambda i: -i[1])
 
         if not guesses:
             return []
@@ -140,7 +142,7 @@ class WebsiteAnalyzer:
         return [
             guess
             for guess in guesses[:limit]
-            if guess[0] is not None and guess[1] >= min_count
+            if guess[1] >= min_count
         ]
 
     def get_statistics(self) -> dict:
