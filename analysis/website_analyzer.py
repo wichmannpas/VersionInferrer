@@ -44,7 +44,7 @@ class WebsiteAnalyzer:
 
         first_estimates = main_page.extract_information()
 
-        self.retrieve_included_assets(main_page)
+        self._retrieve_included_assets(main_page)
         # regard favicon
         self.retrieved_resources.add(Asset(
             join_url(self.primary_url, 'favicon.ico')))
@@ -52,7 +52,7 @@ class WebsiteAnalyzer:
         # First iteration uses all first estimates as well as best
         # guesses from main assets
         guesses = [(estimate, 0) for estimate in first_estimates] + \
-            self.get_best_guesses(guess_limit)
+            self._get_best_guesses(guess_limit)
         logging.info('assets from primary page and first estimates lead to guesses: %s', guesses)
 
         useless_iteration_count = 0
@@ -96,7 +96,7 @@ class WebsiteAnalyzer:
                 useless = True
 
             previous_decisiveness = self._guess_decisiveness(guesses)
-            guesses = self.get_best_guesses(guess_limit)
+            guesses = self._get_best_guesses(guess_limit)
             logging.info('new guesses are %s', guesses)
 
             new_decisiveness = self._guess_decisiveness(guesses)
@@ -128,7 +128,7 @@ class WebsiteAnalyzer:
             return None
 
         best_guess, matches = guesses[0]
-        support = matches / len(self.matchable_retrieved_assets)
+        support = matches / len(self._matchable_retrieved_assets)
         logging.info('Best guess is %s (support %s)', best_guess, support)
 
         if support < MIN_SUPPORT or matches < MIN_ABSOLUTE_SUPPORT:
@@ -137,14 +137,34 @@ class WebsiteAnalyzer:
 
         # TODO: Return something (define interface)
 
-    def get_best_guesses(self, limit: int) -> List[Tuple[SoftwareVersion, int]]:
+    def get_statistics(self) -> dict:
+        """Get statistics about the current analyzer instance."""
+        return {
+            'retrieved_assets_total': len(self.retrieved_assets),
+            'retrieved_resources_total': len(self.retrieved_resources),
+            'retrieved_resources_successful': sum(
+                1 for res in self.retrieved_resources if res.success),
+        }
+
+    @property
+    def retrieved_assets(self) -> FrozenSet[Asset]:
+        """Filter the retrieved resources for assets."""
+        return frozenset(
+            asset
+            for asset in self.retrieved_resources
+            if isinstance(asset, Asset))
+
+
+        # TODO: Return something (define interface)
+
+    def _get_best_guesses(self, limit: int) -> List[Tuple[SoftwareVersion, int]]:
         """
         Extract the best guesses using the retrieved assets.
         """
         guesses = sorted((
             (version, count)
             for version, count
-            in self.map_retrieved_assets_to_versions().items()
+            in self._map_retrieved_assets_to_versions().items()
             if version is not None), key=lambda i: -i[1])
 
         if not guesses:
@@ -158,15 +178,7 @@ class WebsiteAnalyzer:
             if guess[1] >= min_count
         ]
 
-    def get_statistics(self) -> dict:
-        """Get statistics about the current analyzer instance."""
-        return {
-            'retrieved_assets_total': len(self.retrieved_assets),
-            'retrieved_resources_total': len(self.retrieved_resources),
-            'retrieved_resources_successful': sum(1 for res in self.retrieved_resources if res.success),
-        }
-
-    def map_retrieved_assets_to_versions(self) -> Dict[SoftwareVersion, int]:
+    def _map_retrieved_assets_to_versions(self) -> Dict[SoftwareVersion, int]:
         """
         Create a dictionary mapping from every software version to the number
         of retrieved assets which are in use by it.
@@ -183,14 +195,14 @@ class WebsiteAnalyzer:
         return dict(result)
 
     @property
-    def matchable_retrieved_assets(self) -> FrozenSet[Asset]:
+    def _matchable_retrieved_assets(self) -> FrozenSet[Asset]:
         """Filter the retrieved resources for matchable assets."""
         return frozenset(
             asset
             for asset in self.retrieved_resources
             if isinstance(asset, Asset) and asset.using_versions)
 
-    def retrieve_included_assets(self, resource: Resource):
+    def _retrieve_included_assets(self, resource: Resource):
         """Retrieve the assets referenced from resource."""
         parsed = BeautifulSoup(
             resource.content,
@@ -232,14 +244,6 @@ class WebsiteAnalyzer:
                 referenced_url = join_url(resource.url, referenced_url)
             asset = Asset(referenced_url)
             self.retrieved_resources.add(asset)
-
-    @property
-    def retrieved_assets(self) -> FrozenSet[Asset]:
-        """Filter the retrieved resources for assets."""
-        return frozenset(
-            asset
-            for asset in self.retrieved_resources
-            if isinstance(asset, Asset))
 
     @staticmethod
     def _guess_decisiveness(guesses: List[Tuple[SoftwareVersion, int]]) -> int:
