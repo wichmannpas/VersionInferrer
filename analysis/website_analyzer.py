@@ -77,11 +77,18 @@ class WebsiteAnalyzer:
             logging.warning('no guesses found')
             return None
 
-        best_guess, matches = guesses[0]
-        support = matches / len(self._matchable_retrieved_assets)
+        best_guess, best_matches = guesses[0]
+        support = best_matches / len(self._matchable_retrieved_assets)
+        other_best_guesses = []
+        for guess, matches in guesses[1:]:
+            if matches != best_matches:
+                break
+            other_best_guesses.append(guess)
+        if other_best_guesses:
+            best_guess = [best_guess] + other_best_guesses
         logging.info('Best guess is %s (support %s)', best_guess, support)
 
-        if support < MIN_SUPPORT or matches < MIN_ABSOLUTE_SUPPORT:
+        if support < MIN_SUPPORT or best_matches < MIN_ABSOLUTE_SUPPORT:
             logging.warning('Support is too low. No usable result available.')
             return None
 
