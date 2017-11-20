@@ -38,6 +38,18 @@ class Asset(Resource):
         self._checksum = calculate_checksum(self.content)
 
     @property
+    def expected_versions(self) -> Set[SoftwareVersion]:
+        """
+        Retrieve the versions which should provide an asset at this path
+        from the backend.
+        """
+        if not hasattr(self, '_expected_versions'):
+            self._expected_versions = BACKEND \
+                .retrieve_static_file_users_by_webroot_paths(
+                    self.webroot_path)
+        return self._expected_versions
+
+    @property
     def using_versions(self) -> Set[SoftwareVersion]:
         """
         Retrieve the versions using this asset

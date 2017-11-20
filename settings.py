@@ -24,6 +24,8 @@ SUPPORTED_SCHEMES = [
     'http',
     'https',
 ]
+POSITIVE_MATCH_WEIGHT = 1
+NEGATIVE_MATCH_WEIGHT = 0.5
 
 
 # Backend

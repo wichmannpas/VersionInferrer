@@ -227,6 +227,39 @@ class GenericDatabaseBackend(Backend):
             ''', (checksum,))
             return self._get_software_versions_from_raw(cursor.fetchall())
 
+    def retrieve_static_file_users_by_webroot_paths(
+            self, webroot_path: str) -> Set[SoftwareVersion]:
+        """Retrieve all versions providing a static file at the specified path."""
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            SELECT
+                p.name,
+                p.vendor,
+                p.alternative_names,
+                v.name,
+                v.internal_identifier,
+                v.release_date
+            FROM
+                software_package p,
+                software_version v
+            WHERE
+                v.software_package_id = p.id AND
+                v.id IN
+                    (SELECT
+                         software_version_id
+                     FROM
+                         static_file_use
+                     WHERE
+                         static_file_id IN
+                             (SELECT
+                                  id
+                              FROM
+                                  static_file sf
+                              WHERE
+                                  sf.webroot_path=''' + self._operator + '''))
+            ''', (webroot_path,))
+            return self._get_software_versions_from_raw(cursor.fetchall())
+
     def retrieve_versions(
             self, software_package: SoftwarePackage,
             indexed_only: bool = True) -> Set[SoftwareVersion]:

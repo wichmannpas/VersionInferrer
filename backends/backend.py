@@ -33,6 +33,11 @@ class Backend(metaclass=ABCMeta):
         """Retrieve all versions using a static file with a specific checksum."""
 
     @abstractmethod
+    def retrieve_static_file_users_by_webroot_paths(
+            self, webroot_path: str) -> Set[SoftwareVersion]:
+        """Retrieve all versions providing a static file at the specified path."""
+
+    @abstractmethod
     def retrieve_static_files_almost_unique_to_version(
             self, version: SoftwareVersion,
             max_users: int) -> Set[Tuple[Set[SoftwareVersion], StaticFile]]:

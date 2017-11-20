@@ -121,7 +121,7 @@ class WebsiteAnalyzer:
         Extract the best guesses using the retrieved assets.
         """
         guesses = sorted((
-            Guess(version, count)
+            Guess(version, count[0], count[1])
             for version, count
             in self._map_retrieved_assets_to_versions().items()
             if version is not None), reverse=True)
@@ -197,20 +197,22 @@ class WebsiteAnalyzer:
 
         return guesses
 
-    def _map_retrieved_assets_to_versions(self) -> Dict[SoftwareVersion, int]:
+    def _map_retrieved_assets_to_versions(
+            self) -> Dict[SoftwareVersion, Tuple[int, int]]:
         """
         Create a dictionary mapping from every software version to the number
-        of retrieved assets which are in use by it.
+        of retrieved assets which are in use and which are expected but not in
+        us by it.
         """
         # TODO: not only bare counts are interesting, but mutual matches etc.
         # Therefore, find a better modeling strategy
-        result = defaultdict(int)
+        result = defaultdict(lambda: [0, 0])
         for asset in self.retrieved_assets:
-            if not asset.using_versions:
-                result[None] += 1
-                continue
-            for version in asset.using_versions:
-                result[version] += 1
+            for version in asset.expected_versions:
+                if version in asset.using_versions:
+                    result[version][0] += 1
+                else:
+                    result[version][1] += 1
         return dict(result)
 
     @property
