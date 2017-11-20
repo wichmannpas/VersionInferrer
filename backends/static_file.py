@@ -26,5 +26,5 @@ class StaticFile(Model):
                 self.checksum == other.checksum)
 
     def __hash__(self) -> int:
-        return hash(self.software_version) + hash(self.src_path) + \
-            hash(self.webroot_path) + hash(self.checksum)
+        return hash(self.software_version) ^ hash(self.src_path) ^ \
+            hash(self.webroot_path) ^ hash(self.checksum)

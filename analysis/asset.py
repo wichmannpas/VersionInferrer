@@ -20,7 +20,7 @@ class Asset(Resource):
     def __hash__(self) -> int:
         base_hash = super().__hash__()
         if self.retrieved:
-            return base_hash + hash(self.checksum)
+            return base_hash ^ hash(self.checksum)
         return base_hash
 
     @property

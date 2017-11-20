@@ -26,4 +26,4 @@ class SoftwareVersion(Model):
                 self.internal_identifier == other.internal_identifier)
 
     def __hash__(self) -> int:
-        return hash(self.software_package) + hash(self.internal_identifier)
+        return hash(self.software_package) ^ hash(self.internal_identifier)

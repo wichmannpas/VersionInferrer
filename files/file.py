@@ -34,7 +34,7 @@ class File(metaclass=ABCMeta):
             self.checksum == other.checksum)
 
     def __hash__(self) -> int:
-        return hash(self.file_name) + hash(self.raw_content)
+        return hash(self.file_name) ^ hash(self.raw_content)
 
     def __repr__(self) -> str:
         return "<{} '{}'>".format(str(self.__class__.__name__), str(self))

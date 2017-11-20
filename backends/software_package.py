@@ -24,7 +24,7 @@ class SoftwarePackage(Model):
         return self.name == other.name and self.vendor == other.vendor
 
     def __hash__(self) -> int:
-        return hash(self.name) + hash(self.vendor)
+        return hash(self.name) ^ hash(self.vendor)
 
     @property
     def cache_directory(self) -> str:
