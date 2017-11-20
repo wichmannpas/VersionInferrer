@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup, SoupStrainer
 
 from analysis.asset import Asset
+from analysis.guess import Guess
 from analysis.resource import Resource
 from backends.software_version import SoftwareVersion
 from base.utils import join_url
@@ -50,7 +51,7 @@ class WebsiteAnalyzer:
 
         # First iteration uses all first estimates as well as best
         # guesses from main assets
-        guesses = [(estimate, 0) for estimate in first_estimates] + \
+        guesses = [Guess(estimate) for estimate in first_estimates] + \
             self._get_best_guesses(self.guess_limit)
         logging.info('assets from primary page and first estimates lead to guesses: %s', guesses)
 
@@ -77,18 +78,19 @@ class WebsiteAnalyzer:
             logging.warning('no guesses found')
             return None
 
-        best_guess, best_matches = guesses[0]
-        support = best_matches / len(self._matchable_retrieved_assets)
+        best_guess = guesses[0]
+        best_strength = best_guess.strength
+        support = best_strength / len(self._matchable_retrieved_assets)
         other_best_guesses = []
-        for guess, matches in guesses[1:]:
-            if matches != best_matches:
+        for guess in guesses[1:]:
+            if guess.strength != best_strength:
                 break
             other_best_guesses.append(guess)
         if other_best_guesses:
             best_guess = [best_guess] + other_best_guesses
         logging.info('Best guess is %s (support %s)', best_guess, support)
 
-        if support < MIN_SUPPORT or best_matches < MIN_ABSOLUTE_SUPPORT:
+        if support < MIN_SUPPORT or best_strength < MIN_ABSOLUTE_SUPPORT:
             logging.warning('Support is too low. No usable result available.')
             return None
 
@@ -114,27 +116,27 @@ class WebsiteAnalyzer:
 
         # TODO: Return something (define interface)
 
-    def _get_best_guesses(self, limit: int) -> List[Tuple[SoftwareVersion, int]]:
+    def _get_best_guesses(self, limit: int) -> List[Guess]:
         """
         Extract the best guesses using the retrieved assets.
         """
         guesses = sorted((
-            (version, count)
+            Guess(version, count)
             for version, count
             in self._map_retrieved_assets_to_versions().items()
-            if version is not None), key=lambda i: -i[1])
+            if version is not None), reverse=True)
 
         if not guesses:
             return []
 
-        best_guess_count = guesses[0][1]
-        min_count = min(
-            (1 - GUESS_RELATIVE_DIFFERENCE) * best_guess_count,
-            best_guess_count - GUESS_MIN_DIFFERENCE)
+        best_guess_strength = guesses[0].strength
+        min_strength = min(
+            (1 - GUESS_RELATIVE_DIFFERENCE) * best_guess_strength,
+            best_guess_strength - GUESS_MIN_DIFFERENCE)
         return [
             guess
             for guess in guesses[:limit]
-            if guess[1] >= min_count
+            if guess.strength >= min_strength
         ]
 
     def _iterate(
@@ -146,7 +148,7 @@ class WebsiteAnalyzer:
 
         # TODO: make sure that no assets are fetched multiple times
         assets_with_entropy = BACKEND.retrieve_webroot_paths_with_high_entropy(
-            software_versions=(guess[0] for guess in guesses),
+            software_versions=(guess.software_version for guess in guesses),
             limit=self.max_assets_per_iteration,
             exclude=(
                 asset.webroot_path
@@ -267,7 +269,7 @@ class WebsiteAnalyzer:
         """Calculate the difference from the best guess to other guesses."""
         if len(guesses) < 2:
             return 0
-        best_guess_count = guesses[0][1]
+        best_guess_strength = guesses[0].strength
         return sum(
-            best_guess_count - count
-            for guess, count in guesses[1:]) / len(guesses)
+            best_guess_strength - guess.strength
+            for guess in guesses[1:]) / len(guesses)
