@@ -13,9 +13,10 @@ from backends.software_version import SoftwareVersion
 from base.utils import join_url
 from files import file_types_for_analysis
 from settings import BACKEND, GUESS_IGNORE_DISTANCE, \
-    GUESS_RELATIVE_IGNORE_DISTANCE, HTML_PARSER, HTML_RELEVANT_ELEMENTS, \
-    ITERATION_MIN_IMPROVEMENT, MAX_ITERATIONS_WITHOUT_IMPROVEMENT, \
-    MIN_ABSOLUTE_SUPPORT, MIN_SUPPORT, SUPPORTED_SCHEMES
+    GUESS_IGNORE_MIN_POSITIVE, GUESS_RELATIVE_IGNORE_DISTANCE, \
+    HTML_PARSER, HTML_RELEVANT_ELEMENTS, ITERATION_MIN_IMPROVEMENT, \
+    MAX_ITERATIONS_WITHOUT_IMPROVEMENT, MIN_ABSOLUTE_SUPPORT, MIN_SUPPORT, \
+    SUPPORTED_SCHEMES
 
 
 class WebsiteAnalyzer:
@@ -132,6 +133,8 @@ class WebsiteAnalyzer:
         min_strength = max(
             (1 - GUESS_RELATIVE_IGNORE_DISTANCE) * best_guess_strength,
             best_guess_strength - GUESS_IGNORE_DISTANCE)
+        if guesses[0].positive_matches < GUESS_IGNORE_MIN_POSITIVE:
+            min_strength = float('-inf')
         return [
             guess
             for guess in guesses[:limit]
