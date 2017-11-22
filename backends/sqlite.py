@@ -2,6 +2,7 @@ import json
 import sqlite3
 
 from contextlib import closing
+from typing import Iterable, Tuple
 
 from backends.backend import Backend
 from backends.generic_db import GenericDatabaseBackend
@@ -79,3 +80,12 @@ class SqliteBackend(GenericDatabaseBackend):
     @staticmethod
     def _unpack_list(raw: object) -> list:
         return json.loads(raw)
+
+    def _expand_list_operators(self, params: Iterable) -> Tuple[str, list]:
+        """
+        Generate operator string and parameter list for a sql list.
+        Sqlite requires many single parameters.
+        """
+        params = list(params)
+        operators = ', '.join([self._operator] * len(params))
+        return '(' + operators + ')', list(params)

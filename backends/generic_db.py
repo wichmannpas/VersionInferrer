@@ -138,6 +138,7 @@ class GenericDatabaseBackend(Backend):
         retrieved static file.
         """
         with closing(self._connection.cursor()) as cursor:
+            operators, list_params = self._expand_list_operators(self._get_id(version) for version in versions)
             cursor.execute('''
             SELECT
                 sf.id,
@@ -150,9 +151,9 @@ class GenericDatabaseBackend(Backend):
                      static_file_use us
                  WHERE
                      us.static_file_id=sf.id AND
-                     us.software_version_id IN (''' +
-                     ', '.join([self._operator] * len(versions)) +
-                     ''')) vu
+                     us.software_version_id IN ''' +
+                     operators +
+                     ''') vu
                  FROM
                      static_file sf
                  WHERE
@@ -166,7 +167,7 @@ class GenericDatabaseBackend(Backend):
                  ORDER BY
                      vu DESC
                  LIMIT ''' + self._operator + '''
-            ''', tuple([self._get_id(version) for version in versions] + [limit]))
+            ''', tuple(list_params + [limit]))
             return {
                 (frozenset(user
                            for user
@@ -314,7 +315,7 @@ class GenericDatabaseBackend(Backend):
 
         with closing(self._connection.cursor()) as cursor:
             software_version_ids = tuple(software_version_ids)
-            params = [software_version_ids]
+            list_operators, params = self._expand_list_operators(software_version_ids)
             query = '''
             SELECT
                 subquery.webroot_path,
@@ -332,12 +333,12 @@ class GenericDatabaseBackend(Backend):
                 ON
                     us.static_file_id=sf.id
                 WHERE
-                    us.software_version_id IN ''' + self._operator + '''
-            '''
+                    us.software_version_id IN ''' + list_operators
             exclude = tuple(exclude)
             if exclude:
-                query += 'AND sf.webroot_path NOT IN ' + self._operator
-                params.append(exclude)
+                operators, new_params = self._expand_list_operators(exclude)
+                query += 'AND sf.webroot_path NOT IN ' + operators
+                params.extend(new_params)
             query += '''
                 GROUP BY
                     sf.webroot_path
@@ -550,6 +551,7 @@ class GenericDatabaseBackend(Backend):
             SELECT
                 p.name,
                 p.vendor,
+                p.alternative_names,
                 v.name,
                 v.internal_identifier,
                 v.release_date
@@ -638,3 +640,7 @@ class GenericDatabaseBackend(Backend):
     @abstractstaticmethod
     def _unpack_list(raw: object) -> list:
         """Unpack a list from the database."""
+
+    def _expand_list_operators(self, params: Iterable) -> Tuple[str, list]:
+        """Generate operator string and parameter list for a sql list."""
+        return self._operator, [tuple(params)]
