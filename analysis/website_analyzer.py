@@ -102,7 +102,7 @@ class WebsiteAnalyzer:
             'retrieved_assets_total': len(self.retrieved_assets),
             'retrieved_resources_total': len(self.retrieved_resources),
             'retrieved_resources_successful': sum(
-                1 for res in self.retrieved_resources if res.success),
+                1 for res in self.retrieved_resources if res.retrieved and res.success),
         }
 
     @property
