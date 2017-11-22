@@ -80,7 +80,7 @@ class WebsiteAnalyzer:
 
         best_guess = guesses[0]
         best_strength = best_guess.strength
-        support = best_strength / len(self._matchable_retrieved_assets)
+        support = best_strength / len(self.retrieved_assets)
         other_best_guesses = []
         for guess in guesses[1:]:
             if guess.strength != best_strength:
