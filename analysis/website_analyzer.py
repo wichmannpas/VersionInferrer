@@ -12,8 +12,8 @@ from analysis.resource import Resource
 from backends.software_version import SoftwareVersion
 from base.utils import join_url
 from files import file_types_for_analysis
-from settings import BACKEND, GUESS_MIN_DIFFERENCE, \
-    GUESS_RELATIVE_DIFFERENCE, HTML_PARSER, HTML_RELEVANT_ELEMENTS, \
+from settings import BACKEND, GUESS_IGNORE_DISTANCE, \
+    GUESS_RELATIVE_IGNORE_DISTANCE, HTML_PARSER, HTML_RELEVANT_ELEMENTS, \
     ITERATION_MIN_IMPROVEMENT, MAX_ITERATIONS_WITHOUT_IMPROVEMENT, \
     MIN_ABSOLUTE_SUPPORT, MIN_SUPPORT, SUPPORTED_SCHEMES
 
@@ -129,9 +129,9 @@ class WebsiteAnalyzer:
             return []
 
         best_guess_strength = guesses[0].strength
-        min_strength = min(
-            (1 - GUESS_RELATIVE_DIFFERENCE) * best_guess_strength,
-            best_guess_strength - GUESS_MIN_DIFFERENCE)
+        min_strength = max(
+            (1 - GUESS_RELATIVE_IGNORE_DISTANCE) * best_guess_strength,
+            best_guess_strength - GUESS_IGNORE_DISTANCE)
         return [
             guess
             for guess in guesses[:limit]
