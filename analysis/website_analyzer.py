@@ -69,7 +69,6 @@ class WebsiteAnalyzer:
                     self._useless_iteration_count)
                 break
 
-            # TODO: do not check min_difference here but use that var in _get_best_guesses
             if len(guesses) <= 1:
                 logging.info('no guesses to distinguish. stopping iterations early.')
                 break
