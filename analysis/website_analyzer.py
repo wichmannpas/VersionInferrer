@@ -207,10 +207,11 @@ class WebsiteAnalyzer:
         # Therefore, find a better modeling strategy
         result = defaultdict(lambda: [0, 0])
         for asset in self.retrieved_assets:
-            for version in asset.expected_versions:
+            for version in asset.expected_versions | asset.using_versions:
                 if version in asset.using_versions:
                     result[version][0] += 1
                 else:
+                    # not actually using it but expected it
                     result[version][1] += 1
         return dict(result)
 
