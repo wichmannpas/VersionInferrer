@@ -159,12 +159,6 @@ class WebsiteAnalyzer:
                 logging.info(
                     'Reached min iteration assets count. Stop iteration.')
                 break
-            if using_versions == len(guesses) and different_cheksums <= 1:
-                logging.info(
-                    'Ignoring path %s as it is expected for all versions '
-                    'in the same revision.',
-                    webroot_path)
-                continue
             url = join_url(self.primary_url, webroot_path)
             logging.info(
                 'Regarding path %s used by %s versions with '

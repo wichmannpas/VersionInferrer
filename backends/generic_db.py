@@ -317,28 +317,37 @@ class GenericDatabaseBackend(Backend):
             params = [software_version_ids]
             query = '''
             SELECT
-                sf.webroot_path,
-                COUNT(DISTINCT us.software_version_id) version_count,
-                COUNT(DISTINCT sf.checksum) checksum_count
-            FROM
-                static_file sf
-            JOIN
-                static_file_use us
-            ON
-                us.static_file_id=sf.id
-            WHERE
-                us.software_version_id IN ''' + self._operator + '''
+                subquery.webroot_path,
+                subquery.version_count,
+                subquery.checksum_count
+            FROM (
+                SELECT
+                    sf.webroot_path,
+                    COUNT(DISTINCT us.software_version_id) version_count,
+                    COUNT(DISTINCT sf.checksum) checksum_count
+                FROM
+                    static_file sf
+                JOIN
+                    static_file_use us
+                ON
+                    us.static_file_id=sf.id
+                WHERE
+                    us.software_version_id IN ''' + self._operator + '''
             '''
             exclude = tuple(exclude)
             if exclude:
                 query += 'AND sf.webroot_path NOT IN ' + self._operator
                 params.append(exclude)
             query += '''
-            GROUP BY
-                sf.webroot_path
-            ORDER BY
-                version_count DESC,
-                checksum_count DESC
+                GROUP BY
+                    sf.webroot_path
+                ORDER BY
+                    version_count DESC,
+                    checksum_count DESC) subquery
+            WHERE
+                NOT (
+                    subquery.version_count = ''' + str(int(len(software_version_ids))) + ''' AND
+                    subquery.checksum_count = 1)
             LIMIT ''' + str(int(limit)) + '''
             '''
             cursor.execute(query, tuple(params))
