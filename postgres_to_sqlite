@@ -9,11 +9,22 @@ then
 fi
 
 rm -f $SQLITE_DB
-python3 -c "from backends.sqlite import SqliteBackend;SqliteBackend('$SQLITE_DB');"
-sudo -iu postgres pg_dump $POSTGRES_DB --column-inserts --data-only | pv | sed "s/^SE.*$//" | sed "s/ true);$/1);/" | sed "s/ false);$/0);/" | sqlite3 $SQLITE_DB
 
-# Convert hex checksums from dump to actual binary values
+# create sqlite database
+python3 -c "from backends.sqlite import SqliteBackend;SqliteBackend('$SQLITE_DB');"
+
+# drop sqlite indexes for insert performance
+sqlite3 $SQLITE_DB <<EOF
+DROP INDEX static_file_webroot_path;
+DROP INDEX static_file_use_static_file_id;
+EOF
+
+
+(echo "BEGIN TRANSACTION;" && (sudo -iu postgres pg_dump $POSTGRES_DB --column-inserts --data-only | sed "s/^SE.*$//" | sed "s/ true);$/1);/" | sed "s/ false);$/0);/") && echo "END TRANSACTION;") | pv | sqlite3 $SQLITE_DB
+
+# Convert hex checksums from dump to actual binary values and fix software package alternative names
 python3 -c "exec('''
+import json
 from backends.sqlite import SqliteBackend
 b = SqliteBackend('$SQLITE_DB')
 c = b._connection.cursor()
@@ -22,7 +33,14 @@ c.execute('SELECT id, checksum FROM static_file')
 for sf_id, checksum in c.fetchall():
     bin_checksum = int(checksum[2:], 16).to_bytes(16, 'big')
     c2.execute('UPDATE static_file SET checksum=? WHERE id=?', (bin_checksum, sf_id))
+c.execute('SELECT id, alternative_names FROM software_package')
+for sp_id, alternative_names in c.fetchall():
+    alt = json.dumps(alternative_names[1:-1].split(','))
+    c2.execute('UPDATE software_package SET alternative_names=? WHERE id=?', (alt, sp_id))
 b._connection.commit()''')"
 
 # Vacuum database
 sqlite3 $SQLITE_DB VACUUM
+
+# Recreate indexes
+python3 -c "from backends.sqlite import SqliteBackend;SqliteBackend('$SQLITE_DB');"
