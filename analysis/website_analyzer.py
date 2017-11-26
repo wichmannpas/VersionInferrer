@@ -270,10 +270,12 @@ class WebsiteAnalyzer:
             self.retrieved_resources.add(asset)
 
     @staticmethod
-    def _guess_decisiveness(guesses: List[Tuple[SoftwareVersion, int]]) -> int:
+    def _guess_decisiveness(guesses: List[Guess]) -> int:
         """Calculate the difference from the best guess to other guesses."""
-        if len(guesses) < 2:
+        if not guesses:
             return 0
+        if len(guesses) == 1:
+            return guesses[0].strength
         best_guess_strength = guesses[0].strength
         return sum(
             best_guess_strength - guess.strength
