@@ -130,7 +130,7 @@ class WebsiteAnalyzer:
             return []
 
         best_guess_strength = guesses[0].strength
-        min_strength = max(
+        min_strength = min(
             (1 - GUESS_RELATIVE_IGNORE_DISTANCE) * best_guess_strength,
             best_guess_strength - GUESS_IGNORE_DISTANCE)
         if guesses[0].positive_matches < GUESS_IGNORE_MIN_POSITIVE:
