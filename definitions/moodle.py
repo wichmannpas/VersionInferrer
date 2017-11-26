@@ -12,7 +12,7 @@ class Wordpress(SoftwareDefinition):
     provider = GitTagProvider(
         software_package=software_package,
         url='git://git.moodle.org/moodle.git',
-        version_pattern=re.compile(r'^v(?P<version_name>\d+\.\d+\.\d+)'),
+        version_pattern=re.compile(r'^v(?P<version_name>\d+\.\d+\.\d+)$'),
     )
     path_map = {
         '/': '/',
