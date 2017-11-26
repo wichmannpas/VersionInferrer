@@ -341,14 +341,13 @@ class GenericDatabaseBackend(Backend):
                 params.extend(new_params)
             query += '''
                 GROUP BY
-                    sf.webroot_path
-                ORDER BY
-                    version_count DESC,
-                    checksum_count DESC) subquery
+                    sf.webroot_path) subquery
             WHERE
                 NOT (
                     subquery.version_count = ''' + str(int(len(software_version_ids))) + ''' AND
                     subquery.checksum_count = 1)
+            ORDER BY
+                (subquery.version_count + subquery.checksum_count) DESC
             LIMIT ''' + str(int(limit)) + '''
             '''
             cursor.execute(query, tuple(params))
