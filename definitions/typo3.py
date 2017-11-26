@@ -23,7 +23,7 @@ class TYPO3(SoftwareDefinition):
     provider = GitTagProvider(
         software_package=software_package,
         url='git://git.typo3.org/Packages/TYPO3.CMS.git',
-        version_pattern=re.compile(r'^TYPO3_(?P<version_name>.*)'),
+        version_pattern=re.compile(r'^TYPO3_(?P<version_name>\d+-\d+-\d+)$'),
         version_name_derivator=version_name_derivator)
     path_map = {
         '/': '/',
