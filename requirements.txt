@@ -1,3 +1,4 @@
 beautifulsoup4
+msgpack-python
 requests
 url_normalize
