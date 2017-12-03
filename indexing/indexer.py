@@ -1,7 +1,7 @@
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Iterable, List, Set
+from typing import Iterable, List, Set, Union
 
 from backends.model import Model
 from backends.software_version import SoftwareVersion
@@ -102,9 +102,7 @@ class Indexer:
             static_files = self.index_version(definition, version)
             logging.info('indexing %d static files', len(static_files))
             changed = True
-            # TODO: implement bulk insert!
-            for static_file in static_files:
-                self._store_to_backend(static_file)
+            self._store_to_backend(static_files)
 
             self._mark_version_indexed(version)
 
@@ -180,7 +178,7 @@ class Indexer:
 
         BACKEND.delete(obj)
 
-    def _store_to_backend(self, obj: Model):
+    def _store_to_backend(self, obj: Union[Model, List[Model]]):
         """Store an object to the database."""
         # TODO: re-implement fallback for backends not capable of multi-threading
         #       (i.e., using mark_indexed as hoook or similar)

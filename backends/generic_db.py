@@ -374,12 +374,19 @@ class GenericDatabaseBackend(Backend):
                 return row[0]
             return 0
 
-    def store(self, element: Model) -> bool:
+    def store(self, element: Union[Model, List[Model]]) -> bool:
         """
-        Insert or update an instance of a Model subclass.
+        Insert or update an instance or multiple instances of a Model
+        subclass.
 
         Returns whether a change has been made.
         """
+        if isinstance(element, list):
+            # TODO: use actual bulk insert on database level
+            return [
+                self.store(elem)
+                for elem in element
+            ]
         if isinstance(element, SoftwarePackage):
             if self._get_id(element) is not None:
                 # software package exists already

@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABCMeta
-from typing import Iterable, List, Set, Tuple
+from typing import Iterable, List, Set, Tuple, Union
 
 from backends.model import Model
 from backends.software_package import SoftwarePackage
@@ -90,7 +90,7 @@ class Backend(metaclass=ABCMeta):
         """Get the count of static files used by a software version."""
 
     @abstractmethod
-    def store(self, element: Model):
+    def store(self, element: Union[Model, List[Model]]):
         """Insert or update an instance of a Model subclass."""
 
 

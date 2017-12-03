@@ -1,8 +1,9 @@
 import psycopg2
 
 from contextlib import closing
+from typing import List, Union
 
-from backends.backend import Backend
+from backends.backend import Backend, BackendException
 from backends.generic_db import use_cache, GenericDatabaseBackend
 from backends.model import Model
 from backends.software_package import SoftwarePackage
@@ -15,13 +16,16 @@ class PostgresqlBackend(GenericDatabaseBackend):
     _operator = '%s'
     _true_value = 'true'
 
-    def store(self, element: Model) -> bool:
+    def store(self, element: Union[Model, List[Model]]) -> bool:
         """
         Insert or update an instance of a Model subclass.
 
         Returns whether a change has been made.
         For postgres, return value is not always accurate.
         """
+        if isinstance(element, list):
+            return self._store_many(element)
+
         if isinstance(element, SoftwarePackage):
             self._insert_software_package(element)
             return True
@@ -192,6 +196,42 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 static_file_use_static_file_id
             ON static_file_use(static_file_id)
             ''')
+
+    def _store_many(self, elements: List[Model]) -> bool:
+        if not elements:
+            return False
+        model = type(elements[0])
+        for elem in elements:
+            if type(elem) != model:
+                raise BackendException(
+                    'bulk insertion is only supported for objects of the '
+                    'same type')
+        if model == StaticFile:
+            with closing(self._connection.cursor()) as cursor:
+                query_values = []
+                for elem in elements:
+                    software_version_id = self._insert_software_version(
+                        elem.software_version)
+                    # TODO: this could be optimized, use RETURNING id to reduce loop-query count to software version which already uses python cache
+                    static_file_id = self._get_or_create_static_file(elem)
+                    query_values.append(
+                        cursor.mogrify('(%s, %s)',
+                        (software_version_id, static_file_id)))
+                cursor.execute(b'''
+                INSERT
+                INTO static_file_use (
+                    software_version_id,
+                    static_file_id)
+                VALUES ''' + b','.join(query_values) + b'''
+                ON CONFLICT DO NOTHING
+                ''')
+                return None
+        else:
+            # implement actual bulk insertion for other model types
+            return [
+                self.store(elem)
+                for elem in elements
+            ]
 
     @staticmethod
     def _pack_list(unpacked: list) -> object:
