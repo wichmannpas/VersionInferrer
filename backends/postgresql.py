@@ -162,6 +162,9 @@ class PostgresqlBackend(GenericDatabaseBackend):
             )
             ''')
             cursor.execute('''
+            CREATE SEQUENCE IF NOT EXISTS static_file_id_seq;
+            ''')
+            cursor.execute('''
             CREATE TABLE IF NOT EXISTS static_file (
                 id INTEGER PRIMARY KEY DEFAULT NEXTVAL('static_file_id_seq') NOT NULL,
                 src_path TEXT NOT NULL,
@@ -169,9 +172,6 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 checksum BYTEA NOT NULL,
                 UNIQUE(src_path, webroot_path, checksum)
             )
-            ''')
-            cursor.execute('''
-            CREATE SEQUENCE IF NOT EXISTS static_file_id_seq;
             ''')
             cursor.execute('''
             CREATE INDEX IF NOT EXISTS
