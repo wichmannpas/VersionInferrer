@@ -2,7 +2,6 @@
 from argparse import ArgumentParser, Namespace
 
 from analysis.website_analyzer import WebsiteAnalyzer
-from settings import BACKEND
 
 
 def analyze(arguments: Namespace):
