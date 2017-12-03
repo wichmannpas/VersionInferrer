@@ -242,10 +242,13 @@ class PostgresqlBackend(GenericDatabaseBackend):
         elif model == StaticFile:
             with closing(self._connection.cursor()) as cursor:
                 query_values = []
+
+                # add all static file objects to cache
+                self._insert_raw_static_files(elements)
+
                 for elem in elements:
                     software_version_id = self._insert_software_version(
                         elem.software_version)
-                    # TODO: this could be optimized, use RETURNING id to reduce loop-query count to software version which already uses python cache
                     static_file_id = self._get_or_create_static_file(elem)
                     query_values.append(
                         cursor.mogrify('(%s, %s)',
@@ -265,6 +268,34 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 self.store(elem)
                 for elem in elements
             ]
+
+    def _insert_raw_static_files(self, static_files: List[StaticFile]) -> List[int]:
+        """Get or insert multiple static files and get their ids."""
+        with closing(self._connection.cursor()) as cursor:
+            query_values = []
+            for static_file in static_files:
+                query_values.append(cursor.mogrify('(%s, %s, %s)', (
+                    static_file.src_path,
+                    static_file.webroot_path,
+                    static_file.checksum)))
+            cursor.execute(b'''
+            INSERT
+            INTO static_file (
+                src_path,
+                webroot_path,
+                checksum)
+            VALUES ''' + b','.join(query_values) + b'''
+            ON CONFLICT
+                (src_path, webroot_path, checksum)
+                DO UPDATE
+                SET "src_path"="static_file"."src_path"
+            RETURNING id
+            ''')
+            result = []
+            for static_file, id in zip(static_files, cursor.fetchall()):
+                self._cache[static_file] = id
+                result.append(id)
+            return result
 
     @staticmethod
     def _pack_list(unpacked: list) -> object:
