@@ -1,6 +1,7 @@
 import logging
 import os
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
+from copy import deepcopy
 from typing import Iterable, List, Set, Union
 
 from backends.model import Model
@@ -60,7 +61,7 @@ class Indexer:
         """Index for all definitions."""
         while True:
             changed = False
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
                 futures = set()
                 for definition in definitions:
                     # Ensure that software package is in the database
@@ -68,9 +69,10 @@ class Indexer:
                     indexed_versions = BACKEND.retrieve_versions(
                         definition.software_package)
 
+                    worker = deepcopy(self)
                     futures.add(
                         executor.submit(
-                            self.index_definition, definition, indexed_versions))
+                            worker.index_definition, definition, indexed_versions))
                 for future in futures:
                     this_changed = future.result()
                     if this_changed:
@@ -85,6 +87,8 @@ class Indexer:
         Index a specific definition.
         Returns whether at least one new was indexed.
         """
+        BACKEND.reopen_connection()
+
         changed = False
 
         logging.info('handling software package %s', definition.software_package)

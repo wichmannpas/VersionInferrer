@@ -30,6 +30,7 @@ class GenericDatabaseBackend(Backend):
     def __init__(self, *args, **kwargs):
         self._cache = {}
 
+        self._args, self._kwargs = args, kwargs
         self._open_connection(*args, **kwargs)
 
         # Ensure database is initialized
@@ -71,6 +72,10 @@ class GenericDatabaseBackend(Backend):
             WHERE
                 id=''' + self._operator + '''
             ''', (indexed, software_version_id,))
+
+    def reopen_connection(self):
+        """Open a new connection to the backend store."""
+        self._open_connection(*self._args, **self._kwargs)
 
     def retrieve_packages(self) -> Set[SoftwarePackage]:
         """Retrieve all available packages."""

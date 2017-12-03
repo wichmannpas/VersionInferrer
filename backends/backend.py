@@ -19,6 +19,10 @@ class Backend(metaclass=ABCMeta):
         """Update a software version fully indexed flag."""
 
     @abstractmethod
+    def reopen_connection(self):
+        """Open a new connection to the backend store."""
+
+    @abstractmethod
     def retrieve_packages(self) -> Set[SoftwarePackage]:
         """Retrieve all available packages."""
 
