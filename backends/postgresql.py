@@ -206,7 +206,40 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 raise BackendException(
                     'bulk insertion is only supported for objects of the '
                     'same type')
-        if model == StaticFile:
+        if model == SoftwareVersion:
+            with closing(self._connection.cursor()) as cursor:
+                query_values = []
+                for software_version in elements:
+                    software_package_id = self._insert_software_package(
+                        software_version.software_package)
+                    query_values.append(cursor.mogrify('''(
+                        %(software_package_id)s,
+                        %(name)s,
+                        %(internal_identifier)s,
+                        %(release_date)s
+                    )''', {
+                        'software_package_id': software_package_id,
+                        'name': software_version.name,
+                        'internal_identifier': software_version.internal_identifier,
+                        'release_date': software_version.release_date
+                    }))
+                cursor.execute(b'''
+                INSERT
+                INTO software_version (
+                    software_package_id,
+                    name,
+                    internal_identifier,
+                    release_date)
+                VALUES ''' + b','.join(query_values) + b'''
+                ON CONFLICT (software_package_id, internal_identifier) DO UPDATE
+                    SET
+                        name=EXCLUDED.name
+                RETURNING id
+                ''')
+                for software_package, id in zip(elements, cursor.fetchall()):
+                    self._cache[software_package] = id
+                return None
+        elif model == StaticFile:
             with closing(self._connection.cursor()) as cursor:
                 query_values = []
                 for elem in elements:

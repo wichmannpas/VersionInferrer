@@ -96,12 +96,13 @@ class Indexer:
         available_versions = definition.provider.get_versions()
 
         missing_versions = available_versions - indexed_versions
+        self._store_to_backend(list(missing_versions))
+
         logging.info(
             '%d versions not yet indexed for %s',
             len(missing_versions),
             str(definition.software_package))
         for version in missing_versions:
-            self._store_to_backend(version)
 
             static_files = self.index_version(definition, version)
             logging.info('indexing %d static files', len(static_files))
