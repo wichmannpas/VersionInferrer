@@ -63,6 +63,7 @@ class Indexer:
             changed = False
             with ProcessPoolExecutor(max_workers=max_workers) as executor:
                 futures = set()
+                tasks = []
                 for definition in definitions:
                     # Ensure that software package is in the database
                     self._store_to_backend(definition.software_package)
@@ -70,9 +71,10 @@ class Indexer:
                         definition.software_package)
 
                     worker = deepcopy(self)
+                    tasks.append((worker.index_definition, definition, indexed_versions))
+                for task in tasks:
                     futures.add(
-                        executor.submit(
-                            worker.index_definition, definition, indexed_versions))
+                        executor.submit(*task))
                 for future in futures:
                     this_changed = future.result()
                     if this_changed:
