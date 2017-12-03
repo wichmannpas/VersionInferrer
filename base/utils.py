@@ -39,9 +39,9 @@ def normalize_data(data: object) -> bytes:
     is supposed to be identical actually identical.
     """
     if isinstance(data, bytes):
-        return data
+        return data.strip()
     if isinstance(data, str):
-        return data.encode()
+        return data.strip().encode()
     if isinstance(data, dict):
         return msgpack.dumps(sorted([
             (normalize_data(key), normalize_data(value))
