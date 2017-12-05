@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 
 from analysis.website_analyzer import WebsiteAnalyzer
 from base.output import colors, print_info
@@ -10,15 +10,19 @@ class Scanner:
     The scanner handles the automated scanning of multiple (many)
     sites.
     """
-    threads = 80
+    concurrent = 80
 
     def scan_sites(self, count: int):
         """Scan first count sites of majestic top million."""
         sites = majestic_million.get_sites(1, count)
-        with ThreadPoolExecutor(max_workers=self.threads) as executor:
+        futures = []
+        with ProcessPoolExecutor(max_workers=self.concurrent) as executor:
             for site in sites:
-                executor.submit(
-                    self.scan_site, 'http://{}'.format(site.domain))
+                futures.append(executor.submit(
+                    self.scan_site, 'http://{}'.format(site.domain)))
+            for future in futures:
+                # access result to get exceptions etc
+                future.result()
 
     def scan_site(self, url: str):
         """Scan a single site."""
