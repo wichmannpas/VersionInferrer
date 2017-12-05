@@ -15,6 +15,7 @@ class Scanner:
     sites.
     """
     concurrent = 80
+    skip_existing = True
 
     def scan_sites(self, count: int):
         """Scan first count sites of majestic top million."""
@@ -34,6 +35,12 @@ class Scanner:
     def scan_site(self, url: str):
         """Scan a single site."""
         domain = urlparse(url).hostname
+        if self.skip_existing and os.path.isfile(os.path.join(SCAN_DIR, domain)):
+            print_info(
+                colors.YELLOW,
+                'SKIPPING',
+                url)
+            return
         print_info(
             colors.PURPLE,
             'SCANNING',
