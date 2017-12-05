@@ -37,6 +37,9 @@ BACKEND = SqliteBackend(os.path.join(BASE_DIR, 'db.sqlite3'))
 # Cache
 CACHE_DIR = os.path.join(BASE_DIR, 'cache')
 
+# Scanning
+SCAN_DIR = os.path.join(BASE_DIR, 'scan_results')
+
 
 # import local settings if not in unit test mode
 if 'unittest' not in sys.modules:
