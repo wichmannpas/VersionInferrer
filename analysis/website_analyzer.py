@@ -35,7 +35,7 @@ class WebsiteAnalyzer:
         self.primary_url = primary_url
         self.retrieved_resources = set()
 
-    def analyze(self):
+    def analyze(self) -> List[Guess]:
         """Analyze the website."""
         main_page = Resource(self.primary_url)
         self.retrieved_resources.add(main_page)
@@ -81,20 +81,18 @@ class WebsiteAnalyzer:
         best_guess = guesses[0]
         best_strength = best_guess.strength
         support = best_strength / len(self.retrieved_assets)
-        other_best_guesses = []
+        best_guess = [best_guess]
         for guess in guesses[1:]:
             if guess.strength != best_strength:
                 break
-            other_best_guesses.append(guess)
-        if other_best_guesses:
-            best_guess = [best_guess] + other_best_guesses
+            best_guess.append(guess)
         logging.info('Best guess is %s (support %s)', best_guess, support)
 
         if support < MIN_SUPPORT or best_strength < MIN_ABSOLUTE_SUPPORT:
             logging.warning('Support is too low. No usable result available.')
             return None
 
-        # TODO: Return something (define interface)
+        return best_guess
 
     def get_statistics(self) -> dict:
         """Get statistics about the current analyzer instance."""
