@@ -1,5 +1,4 @@
 cache
-scan_results
 db.sqlite3
 db.sqlite3-journal
 *.pyc

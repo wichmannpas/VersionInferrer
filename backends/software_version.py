@@ -27,3 +27,12 @@ class SoftwareVersion(Model):
 
     def __hash__(self) -> int:
         return hash(self.software_package) ^ hash(self.internal_identifier)
+
+    def serialize(self) -> dict:
+        """Serialize into a dict."""
+        return {
+            'software_package': self.software_package.serialize(),
+            'name': self.name,
+            'internal_identifier': self.internal_identifier,
+            'release_date': self.release_date.isoformat(),
+        }

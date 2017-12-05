@@ -34,3 +34,11 @@ class SoftwarePackage(Model):
         return os.path.join(
             CACHE_DIR,
             self.name.lower())
+
+    def serialize(self) -> dict:
+        """Serialize into a dict."""
+        return {
+            'name': self.name,
+            'vendor': self.vendor,
+            'alternative_names': self.alternative_names,
+        }

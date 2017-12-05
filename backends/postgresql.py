@@ -1,7 +1,8 @@
-import psycopg2
-
+import json
 from contextlib import closing
 from typing import List, Union
+
+import psycopg2
 
 from backends.backend import Backend, BackendException
 from backends.generic_db import use_cache, GenericDatabaseBackend
@@ -15,6 +16,54 @@ class PostgresqlBackend(GenericDatabaseBackend):
     """The backend handling the SQLite communication."""
     _operator = '%s'
     _true_value = 'true'
+
+    def initialize_scan_results(self):
+        """
+        Prepare the backend to store scan results.
+
+        This only supports postgresql.
+        """
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS scan_result (
+                url TEXT PRIMARY KEY NOT NULL,
+                result JSONB
+            )
+            ''')
+
+    def retrieve_scan_result(self, url: str) -> Union[object, None]:
+        """
+        Retrieve a scan result from the backend.
+        """
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            SELECT
+                r.result
+            FROM
+                scan_result r
+            WHERE
+                r.url = %s
+            ''', (url,))
+            result = cursor.fetchone()
+            if result:
+                return result[0]
+
+    def store_scan_result(self, url: str, result: object):
+        """
+        Store a scan result to the backend.
+        """
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            INSERT
+            INTO scan_result (
+                url,
+                result
+            )
+            VALUES (
+                %s,
+                %s
+            )
+            ''', (url, json.dumps(result)))
 
     def store(self, element: Union[Model, List[Model]]) -> bool:
         """

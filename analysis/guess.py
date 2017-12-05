@@ -43,6 +43,14 @@ class Guess:
             self.positive_matches,
             self.negative_matches)
 
+    def serialize(self) -> dict:
+        """Serialize into a dict."""
+        return {
+            'software_version': self.software_version.serialize(),
+            'positive_matches': self.positive_matches,
+            'negative_matches': self.negative_matches,
+        }
+
     @property
     def strength(self) -> int:
         """The strength of the guess."""
