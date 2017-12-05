@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 from analysis.website_analyzer import WebsiteAnalyzer
 from base.output import colors, print_info
 from scanning import majestic_million
-from settings import SCAN_DIR
+from settings import BACKEND, SCAN_DIR
 
 
 class Scanner:
@@ -38,6 +38,7 @@ class Scanner:
             colors.PURPLE,
             'SCANNING',
             url)
+        BACKEND.reopen_connection()
         analyzer = WebsiteAnalyzer(
             primary_url=url)
         best_guess = analyzer.analyze()
