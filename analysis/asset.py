@@ -28,6 +28,8 @@ class Asset(Resource):
         """The checksum of the current assets content."""
         if not self.retrieved:
             self.retrieve()
+        if not self._success:
+            raise RetrievalFailure
 
         return self._checksum
 

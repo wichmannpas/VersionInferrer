@@ -2,12 +2,18 @@ import logging
 from typing import Set, Union
 from urllib.parse import urlparse
 
-import requests
 from bs4 import BeautifulSoup
+
+import requests
+from requests.exceptions import ConnectionError
 
 from analysis.wappalyzer_apps import wappalyzer_apps
 from backends.software_version import SoftwareVersion
 from settings import BACKEND, HTML_PARSER
+
+
+class RetrievalFailure(Exception):
+    """The retrieval of the resource has failed."""
 
 
 class Resource:
@@ -35,6 +41,8 @@ class Resource:
     def content(self) -> bytes:
         if not self.retrieved:
             self.retrieve()
+        if not self._success:
+            raise RetrievalFailure
 
         return self._response.content
 
@@ -57,6 +65,8 @@ class Resource:
         """The final url, i.e., the url of the resource after all redirects."""
         if not self.retrieved:
             self.retrieve()
+        if not self._success:
+            raise RetrievalFailure
 
         return self._response.url
 
@@ -64,12 +74,16 @@ class Resource:
         """Retrieve the resource from its url."""
         logging.info('Retrieving resource %s', self.url)
 
-        self._response = requests.get(self.url)
+        try:
+            self._response = requests.get(self.url)
+        except ConnectionError:
+            self._success = False
+        else:
+            self._success = True
 
-        if self._response.status_code != 200:
+        if not self._success or self._response.status_code != 200:
             logging.info(
-                'HTTP %s for %s',
-                self._response.status_code,
+                'Retrieval failure for %s',
                 self.url)
 
     @property
@@ -81,12 +95,16 @@ class Resource:
     def status_code(self) -> int:
         if not self.retrieved:
             self.retrieve()
+        if not self._success:
+            raise RetrievalFailure
 
         return self._response.status_code
 
     @property
     def success(self) -> bool:
-        return self.status_code == 200
+        if not self.retrieved:
+            self.retrieve()
+        return self._success and self.status_code == 200
 
     @property
     def webroot_path(self):

@@ -1,7 +1,7 @@
 import logging
 import os
 from collections import defaultdict
-from typing import Dict, FrozenSet, List, Tuple
+from typing import Dict, FrozenSet, List, Tuple, Union
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup, SoupStrainer
@@ -35,9 +35,12 @@ class WebsiteAnalyzer:
         self.primary_url = primary_url
         self.retrieved_resources = set()
 
-    def analyze(self) -> List[Guess]:
+    def analyze(self) -> Union[List[Guess], None]:
         """Analyze the website."""
         main_page = Resource(self.primary_url)
+        if not main_page.success:
+            logging.info('failed to retrieve main resource. Stopping')
+            return None
         self.retrieved_resources.add(main_page)
         if main_page.final_url != self.primary_url:
             logging.info('updating primary url to %s', main_page.final_url)
