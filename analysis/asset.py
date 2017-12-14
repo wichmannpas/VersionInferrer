@@ -57,6 +57,8 @@ class Asset(Resource):
         Retrieve the versions using this asset
         from the backend.
         """
+        if not self.success:
+            return set()
         if not hasattr(self, '_using_versions'):
             self._using_versions = BACKEND \
                 .retrieve_static_file_users_by_checksum(
