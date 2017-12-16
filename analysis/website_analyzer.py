@@ -134,7 +134,7 @@ class WebsiteAnalyzer:
         min_strength = min(
             (1 - GUESS_RELATIVE_IGNORE_DISTANCE) * best_guess_strength,
             best_guess_strength - GUESS_IGNORE_DISTANCE)
-        if guesses[0].positive_matches < GUESS_IGNORE_MIN_POSITIVE:
+        if guesses[0].positive_strength < GUESS_IGNORE_MIN_POSITIVE:
             min_strength = float('-inf')
         return [
             guess
@@ -205,18 +205,18 @@ class WebsiteAnalyzer:
         """
         Create a dictionary mapping from every software version to the number
         of retrieved assets which are in use and which are expected but not in
-        us by it.
+        use by it.
         """
         # TODO: not only bare counts are interesting, but mutual matches etc.
         # Therefore, find a better modeling strategy
-        result = defaultdict(lambda: [0, 0])
+        result = defaultdict(lambda: [set(), set()])
         for asset in self.retrieved_assets:
             for version in asset.expected_versions | asset.using_versions:
                 if version in asset.using_versions:
-                    result[version][0] += 1
+                    result[version][0].add(asset)
                 else:
                     # not actually using it but expected it
-                    result[version][1] += 1
+                    result[version][1].add(asset)
         return dict(result)
 
     @property

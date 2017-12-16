@@ -52,6 +52,15 @@ class Asset(Resource):
         return self._expected_versions
 
     @property
+    def idf_weight(self):
+        """Get the idf weight for this asset."""
+        if not hasattr(self, '_idf_weight'):
+            # cache in python object
+            self._idf_weight = BACKEND.retrieve_static_file_idf_weight(
+                self.checksum)
+        return self._idf_weight
+
+    @property
     def using_versions(self) -> Set[SoftwareVersion]:
         """
         Retrieve the versions using this asset

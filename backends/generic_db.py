@@ -104,6 +104,9 @@ class GenericDatabaseBackend(Backend):
                 (checksum,))
             total_version_count, global_using_versions_count = cursor.fetchone()
         # TODO: use packages instead of versions to prevent higher weight of packages with a higher number of released versions?
+        if not global_using_versions_count:
+            # this static file is not used at all (probably a negative match).
+            return 1
         return log(
             total_version_count /
             global_using_versions_count)

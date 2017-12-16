@@ -17,9 +17,9 @@ HTML_RELEVANT_ELEMENTS = [
     'script',
     'style',
 ]
-ITERATION_MIN_IMPROVEMENT = 0.3 # The minimum increase in the difference to the best guess required per iteration
+ITERATION_MIN_IMPROVEMENT = 0.5 # The minimum increase in the difference to the best guess required per iteration
 MAX_ITERATIONS_WITHOUT_IMPROVEMENT = 3 # The maximum number of consecutive iterations with improvement less than min
-MIN_ABSOLUTE_SUPPORT = 3
+MIN_ABSOLUTE_SUPPORT = 8
 MIN_SUPPORT = 0.2
 SUPPORTED_SCHEMES = [
     'http',
