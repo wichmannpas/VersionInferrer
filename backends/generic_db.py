@@ -1,5 +1,6 @@
 from abc import abstractmethod, abstractstaticmethod
 from contextlib import closing
+from math import log
 from typing import Iterable, List, Set, Tuple, Union
 
 from backends.backend import Backend, BackendException
@@ -76,6 +77,36 @@ class GenericDatabaseBackend(Backend):
     def reopen_connection(self):
         """Open a new connection to the backend store."""
         self._open_connection(*self._args, **self._kwargs)
+
+    def retrieve_static_file_idf_weight(
+            self, checksum: bytes) -> float:
+        """
+        Retrieve the IDF weight for a specific static file checksum.
+        Only the checksum of the file is used.
+        """
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+                SELECT
+                    (
+                        SELECT
+                            COUNT(id)
+                        FROM
+                            software_version
+                    ) total_version_count,
+                    COUNT(DISTINCT us.software_version_id) global_using_versions_count
+                FROM
+                    static_file sf
+                JOIN
+                    static_file_use us
+                ON
+                    us.static_file_id = sf.id
+                WHERE sf.checksum = ''' + self._operator,
+                (checksum,))
+            total_version_count, global_using_versions_count = cursor.fetchone()
+        # TODO: use packages instead of versions to prevent higher weight of packages with a higher number of released versions?
+        return log(
+            total_version_count /
+            global_using_versions_count)
 
     def retrieve_packages(self) -> Set[SoftwarePackage]:
         """Retrieve all available packages."""

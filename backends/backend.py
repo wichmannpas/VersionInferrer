@@ -22,6 +22,14 @@ class Backend(metaclass=ABCMeta):
     def reopen_connection(self):
         """Open a new connection to the backend store."""
 
+    # TODO: Provide a method allowing idf retrieval for several static files at once (db access optimization)
+    @abstractmethod
+    def retrieve_static_file_idf_weight(
+            self, checksum: bytes) -> float:
+        """
+        Retrieve the IDF weight for a specific static file checksum.
+        """
+
     @abstractmethod
     def retrieve_packages(self) -> Set[SoftwarePackage]:
         """Retrieve all available packages."""
