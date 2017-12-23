@@ -73,8 +73,8 @@ class WebsiteAnalyzer:
                     self._useless_iteration_count)
                 break
 
-            if len(guesses) <= 1:
-                logging.info('no guesses to distinguish. stopping iterations early.')
+            if len(guesses) == 1 and self._has_enough_support(guesses):
+                logging.info('no guesses to distinguish and support is high enough. Stopping.')
                 break
 
         if not guesses:
