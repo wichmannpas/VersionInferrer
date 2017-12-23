@@ -381,10 +381,15 @@ class GenericDatabaseBackend(Backend):
             query += '''
                 GROUP BY
                     sf.webroot_path) subquery
-            WHERE
-                NOT (
-                    subquery.version_count = ''' + str(int(len(software_version_ids))) + ''' AND
-                    subquery.checksum_count = 1)
+            '''
+            if len(software_version_ids) > 1:
+                query += '''
+                    WHERE
+                        NOT (
+                            subquery.version_count = ''' + str(int(len(software_version_ids))) + ''' AND
+                            subquery.checksum_count = 1)
+                '''
+            query += '''
             ORDER BY
                 (subquery.version_count + subquery.checksum_count) DESC
             LIMIT ''' + str(int(limit)) + '''
