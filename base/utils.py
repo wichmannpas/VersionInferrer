@@ -1,8 +1,11 @@
 import os
 from urllib.parse import urljoin
+from typing import Iterable
 
 import msgpack
 from url_normalize import url_normalize
+
+from backends.software_version import SoftwareVersion
 
 
 def join_paths(*args):
@@ -55,3 +58,11 @@ def normalize_data(data: object) -> bytes:
 
     # use msgpack without further normalization. Might raise TypeError
     return msgpack.dumps(data)
+
+
+def most_recent_version(versions: Iterable[SoftwareVersion]) -> SoftwareVersion:
+    """
+    Get the most recent version (based on its release date) from an
+    iterable of versions.
+    """
+    return max(versions, key=lambda v: v.release_date)

@@ -1,6 +1,8 @@
+from datetime import date
 from unittest import TestCase
 
-from base.utils import join_paths, join_url
+from backends.software_version import SoftwareVersion
+from base.utils import join_paths, join_url, most_recent_version
 
 
 class TestJoinPaths(TestCase):
@@ -76,3 +78,74 @@ class TestJoinUrl(TestCase):
         self.assertEqual(
             join_url('https://foo/', 'bar/', '/baz'),
             'https://foo/bar/baz')
+
+
+class TestMostRecentVersion(TestCase):
+    def setUp(self):
+        self.version1 = SoftwareVersion(
+            None,
+            'foobar',
+            'foobar',
+            date(2000, 1, 1))
+        self.version2 = SoftwareVersion(
+            None,
+            'qux',
+            'quxa',
+            date(2001, 1, 1))
+        self.version3 = SoftwareVersion(
+            None,
+            'baz',
+            'baz',
+            date(2001, 5, 2))
+
+    def test_list(self):
+        self.assertEqual(
+            most_recent_version([
+                self.version1,
+            ]),
+            self.version1)
+        self.assertEqual(
+            most_recent_version([
+                self.version1,
+                self.version3,
+            ]),
+            self.version3)
+        self.assertEqual(
+            most_recent_version([
+                self.version1,
+                self.version2,
+                self.version3,
+            ]),
+            self.version3)
+        self.assertEqual(
+            most_recent_version([
+                self.version2,
+                self.version1,
+            ]),
+            self.version2)
+
+    def test_set(self):
+        self.assertEqual(
+            most_recent_version({
+                self.version1,
+            }),
+            self.version1)
+        self.assertEqual(
+            most_recent_version({
+                self.version1,
+                self.version3,
+            }),
+            self.version3)
+        self.assertEqual(
+            most_recent_version({
+                self.version1,
+                self.version2,
+                self.version3,
+            }),
+            self.version3)
+        self.assertEqual(
+            most_recent_version({
+                self.version2,
+                self.version1,
+            }),
+            self.version2)
