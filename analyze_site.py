@@ -18,9 +18,22 @@ def analyze(arguments: Namespace):
     if arguments.max_assets_per_iteration:
         analyzer.max_assets_per_iteration = arguments.max_assets_per_iteration,
 
-    analyzer.analyze()
+    result = analyzer.analyze()
 
     print(analyzer.get_statistics())
+
+    if not result:
+        return
+
+    print(result)
+
+    more_recent = analyzer.more_recent_version(
+        guess.software_version for guess in result)
+
+    if more_recent:
+        print(
+            'More recent version {} released, possibly outdated!'.format(
+                more_recent))
 
 
 if __name__ == '__main__':

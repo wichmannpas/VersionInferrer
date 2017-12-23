@@ -1,7 +1,7 @@
 import logging
 import os
 from collections import defaultdict
-from typing import Dict, FrozenSet, List, Tuple, Union
+from typing import Dict, FrozenSet, Iterable, List, Tuple, Union
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup, SoupStrainer
@@ -10,7 +10,7 @@ from analysis.asset import Asset
 from analysis.guess import Guess
 from analysis.resource import Resource
 from backends.software_version import SoftwareVersion
-from base.utils import join_url
+from base.utils import join_url, most_recent_version
 from files import file_types_for_analysis
 from settings import BACKEND, GUESS_IGNORE_DISTANCE, \
     GUESS_IGNORE_MIN_POSITIVE, GUESS_RELATIVE_IGNORE_DISTANCE, \
@@ -114,8 +114,35 @@ class WebsiteAnalyzer:
             for asset in self.retrieved_resources
             if isinstance(asset, Asset))
 
+    @staticmethod
+    def more_recent_version(
+                version: Union[SoftwareVersion, Iterable[SoftwareVersion]]
+            ) -> Union[None, SoftwareVersion]:
+        """
+        Check whether version is the most recent release of its
+        software package.
+        Returns None if it is most recent (compared to index), the
+        most recent version otherwise.
 
-        # TODO: Return something (define interface)
+        version can be an interable of multiple versions (i.e., a result
+        from analyze). In that case the
+        most recent version of those versions is regarded.
+        """
+        if not isinstance(version, SoftwareVersion):
+            # TODO: find a better way than casting to list
+            version = list(version)
+            assert all(
+                v.software_package == version[0].software_package
+                for v in version[1:]), 'the iterable contains versions of different software packages'
+            version = most_recent_version(version)
+
+        package = version.software_package
+        most_recent = most_recent_version(
+            BACKEND.retrieve_versions(package, indexed_only=False))
+
+        if most_recent == version:
+            return None
+        return most_recent
 
     def _get_best_guesses(self, limit: int) -> List[Guess]:
         """
@@ -143,8 +170,8 @@ class WebsiteAnalyzer:
         ]
 
     def _iterate(
-            self, guesses: List[Tuple[SoftwareVersion, int]]
-        ) -> List[Tuple[SoftwareVersion, int]]:
+                self, guesses: List[Tuple[SoftwareVersion, int]]
+            ) -> List[Tuple[SoftwareVersion, int]]:
         """Do an iteration."""
         logging.info('starting iteration %s', self.iteration)
         useless = False
