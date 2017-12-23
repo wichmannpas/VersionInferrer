@@ -81,17 +81,10 @@ class WebsiteAnalyzer:
             logging.warning('no guesses found')
             return None
 
-        best_guess = guesses[0]
-        best_strength = best_guess.strength
-        support = best_strength / len(self.retrieved_assets)
-        best_guess = [best_guess]
-        for guess in guesses[1:]:
-            if guess.strength != best_strength:
-                break
-            best_guess.append(guess)
+        best_guess, support = self._calculate_support(guesses)
         logging.info('Best guess is %s (support %s)', best_guess, support)
 
-        if support < MIN_SUPPORT or best_strength < MIN_ABSOLUTE_SUPPORT:
+        if not self._has_enough_support(best_guess):
             logging.warning('Support is too low. No usable result available.')
             return None
 
@@ -144,6 +137,20 @@ class WebsiteAnalyzer:
             return None
         return most_recent
 
+    def _calculate_support(self, guesses: List[Guess]) -> Tuple[List[Guess], float]:
+        """Calculate the support of guesses and get the best guess(es)."""
+        # TODO: be a bit more academical in support/confidence determination
+        best_guess = guesses[0]
+        best_strength = best_guess.strength
+        support = best_strength / len(self.retrieved_assets)
+        best_guess = [best_guess]
+        for guess in guesses[1:]:
+            if guess.strength != best_strength:
+                break
+            best_guess.append(guess)
+
+        return best_guess, support
+
     def _get_best_guesses(self, limit: int) -> List[Guess]:
         """
         Extract the best guesses using the retrieved assets.
@@ -168,6 +175,11 @@ class WebsiteAnalyzer:
             for guess in guesses[:limit]
             if guess.strength >= min_strength
         ]
+
+    def _has_enough_support(self, guesses: List[Guess]) -> bool:
+        """Check whether the support of best_guess is high enough."""
+        best_guess, support = self._calculate_support(guesses)
+        return support >= MIN_SUPPORT and best_guess[0].strength >= MIN_ABSOLUTE_SUPPORT
 
     def _iterate(
                 self, guesses: List[Tuple[SoftwareVersion, int]]
