@@ -109,7 +109,7 @@ class GenericDatabaseBackend(Backend):
             return 1
         return log(
             total_version_count /
-            global_using_versions_count)
+            global_using_versions_count, 10)
 
     def retrieve_packages(self) -> Set[SoftwarePackage]:
         """Retrieve all available packages."""
