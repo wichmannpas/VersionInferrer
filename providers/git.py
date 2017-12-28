@@ -26,6 +26,12 @@ class GenericGitProvider(Provider):
     def __repr__(self) -> str:
         return "<{} '{}'>".format(str(self.__class__.__name__), str(self))
 
+    def _call_command(self, *args, **kwargs):
+        lockfile_path = os.path.join(self.cache_directory, '.git/index.lock')
+        if os.path.isfile(lockfile_path):
+            os.remove(lockfile_path)
+        return super()._call_command(*args, **kwargs)
+
     def _check_cache_directory(self) -> bool:
         """Check whether a valid clone of the provided Git repository."""
         if not os.path.isdir(self.cache_directory):
