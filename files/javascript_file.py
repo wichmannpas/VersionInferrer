@@ -8,6 +8,9 @@ from base.utils import normalize_data
 from files.file import File
 
 
+parser = Parser()
+
+
 class JavascriptFile(File):
     """
     A JavaScript file.
@@ -39,8 +42,6 @@ class JavascriptFile(File):
         if not self.has_usual_file_name_extension:
             # skip parsing if file extension does not indicate javascript
             return None
-
-        parser = Parser()
 
         try:
             parsed = parser.parse(content)
