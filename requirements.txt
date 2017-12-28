@@ -3,5 +3,6 @@ msgpack-python
 pyblake2; python_version < '3.6'
 PyYAML
 requests
+slimit
 typing; python_version < '3.5'
 url_normalize
