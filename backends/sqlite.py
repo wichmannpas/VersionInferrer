@@ -15,6 +15,8 @@ class SqliteBackend(GenericDatabaseBackend):
 
     def _open_connection(self, *args, **kwargs):
         """Open a connection to the database."""
+        kwargs['detect_types'] = sqlite3.PARSE_DECLTYPES
+
         self._connection = sqlite3.connect(*args, **kwargs)
 
         # Enable foreign keys
@@ -39,7 +41,7 @@ class SqliteBackend(GenericDatabaseBackend):
                 software_package_id INTEGER NOT NULL,
                 name TEXT NOT NULL,
                 internal_identifier TEXT NOT NULL,
-                release_date DATETIME,
+                release_date TIMESTAMP,
                 indexed BOOLEAN DEFAULT 0,
                 FOREIGN KEY(software_package_id) REFERENCES software_package(id),
                 UNIQUE(software_package_id, internal_identifier)
