@@ -60,6 +60,16 @@ class Asset(Resource):
                 self.checksum)
         return self._idf_weight
 
+    def serialize(self) -> dict:
+        """Serialize into a dict."""
+        base = super().serialize()
+        base.update({
+            'expected_versions': self.expected_versions,
+            'using_versions': self.using_versions,
+            'checksum': self.checksum.hex(),
+        })
+        return base
+
     @property
     def using_versions(self) -> Set[SoftwareVersion]:
         """

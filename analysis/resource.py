@@ -91,6 +91,15 @@ class Resource:
         """Whether the resource has already been retrieved."""
         return hasattr(self, '_response')
 
+    def serialize(self) -> dict:
+        """Serialize into a dict."""
+        return {
+            'url': self.url,
+            'webroot_path': self.webroot_path,
+            'status_code': self.status_code,
+            'success': self.success,
+        }
+
     @property
     def status_code(self) -> int:
         if not self.retrieved:
