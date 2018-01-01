@@ -57,7 +57,8 @@ class Indexer:
             self._delete_from_backend(version)
         return True
 
-    def index_all(self, max_workers: int = 16):
+    def index_all(self, max_workers: int = 16,
+            limit_definitions: Union[None, List[str]] = None):
         """Index for all definitions."""
         while True:
             changed = False
@@ -65,6 +66,9 @@ class Indexer:
                 futures = set()
                 tasks = []
                 for definition in definitions:
+                    if limit_definitions is not None and definition not in limit_definitions:
+                        # this definition is to be skipped
+                        continue
                     # Ensure that software package is in the database
                     self._store_to_backend(definition.software_package)
                     indexed_versions = BACKEND.retrieve_versions(
