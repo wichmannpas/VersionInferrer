@@ -1,14 +1,11 @@
 import logging
 from typing import Union
 
-from slimit import ast
-from slimit.parser import Parser
+import pyjsparser
+from pyjsparser import JsSyntaxError
 
 from base.utils import normalize_data
 from files.file import File
-
-
-parser = Parser()
 
 
 class JavascriptFile(File):
@@ -44,11 +41,10 @@ class JavascriptFile(File):
             return None
 
         try:
-            parsed = parser.parse(content)
-            parsed = ast_to_builtin(parsed)
+            parsed = pyjsparser.parse(content)
 
             return normalize_data(parsed)
-        except (SyntaxError, TypeError, ValueError):
+        except (JsSyntaxError, TypeError, ValueError):
             logging.warning(
                 'failed to parse javascript file %s. Skipping abstract syntax tree construction',
                 self.file_name)
@@ -57,25 +53,3 @@ class JavascriptFile(File):
             return normalize_data(parsed)
         except (TypeError, ValueError):
             return None
-
-
-def ast_to_builtin(data: object) -> object:
-    """
-    Model slimit.ast objects using only  built-in types.
-
-    This makes use of the __dict__ attribute of the python objects.
-    """
-    if isinstance(data, ast.Node):
-        return ast_to_builtin(data.__dict__)
-
-    if isinstance(data, dict):
-        return {
-            key: ast_to_builtin(value)
-            for key, value in data.items()
-        }
-    elif isinstance(data, (list, set, tuple)):
-        return [
-            ast_to_builtin(item)
-            for item in data
-        ]
-    return data
