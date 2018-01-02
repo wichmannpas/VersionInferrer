@@ -1,8 +1,8 @@
 import logging
 from typing import Union
 
-import pyjsparser
-from pyjsparser import JsSyntaxError
+# import pyjsparser
+# from pyjsparser import JsSyntaxError
 
 from base.utils import normalize_data
 from files.file import File
@@ -31,25 +31,29 @@ class JavascriptFile(File):
         """
         The content of this static file normalized for this file type.
         """
-        try:
-            content = self.raw_content.decode()
-        except UnicodeDecodeError:
-            return None
+        # TODO: fix abstract syntax tree issues and reuse code
+        return self.raw_content
 
-        if not self.has_usual_file_name_extension:
-            # skip parsing if file extension does not indicate javascript
-            return None
+        # TODO: max recursion depth reached easily
+        # try:
+        #     content = self.raw_content.decode()
+        # except UnicodeDecodeError:
+        #     return None
 
-        try:
-            parsed = pyjsparser.parse(content)
+        # if not self.has_usual_file_name_extension:
+        #     # skip parsing if file extension does not indicate javascript
+        #     return None
 
-            return normalize_data(parsed)
-        except (JsSyntaxError, TypeError, ValueError):
-            logging.warning(
-                'failed to parse javascript file %s. Skipping abstract syntax tree construction',
-                self.file_name)
-            parsed = content
-        try:
-            return normalize_data(parsed)
-        except (TypeError, ValueError):
-            return None
+        # try:
+        #     parsed = pyjsparser.parse(content)
+
+        #     return normalize_data(parsed)
+        # except (JsSyntaxError, TypeError, ValueError):
+        #     logging.warning(
+        #         'failed to parse javascript file %s. Skipping abstract syntax tree construction',
+        #         self.file_name)
+        #     parsed = content
+        # try:
+        #     return normalize_data(parsed)
+        # except (TypeError, ValueError):
+        #     return None
