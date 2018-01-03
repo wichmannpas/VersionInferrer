@@ -37,7 +37,8 @@ class Asset(Resource):
         """Retrieve the asset and calculate its checksum."""
         super().retrieve()
 
-        self._checksum = calculate_checksum(self.content)
+        if self._success:
+            self._checksum = calculate_checksum(self.content)
 
     @property
     def expected_versions(self) -> Set[SoftwareVersion]:
