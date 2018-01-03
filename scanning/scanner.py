@@ -54,7 +54,14 @@ class Scanner:
         result = analyzer.analyze()
         if not result:
             result = False
-        BACKEND.store_scan_result(url, result)
+        more_recent = None
+        if result:
+            more_recent = analyzer.more_recent_version(
+                guess.software_version for guess in result)
+        BACKEND.store_scan_result(url, {
+            'result': result,
+            'more_recent': more_recent,
+        })
         print_info(
             colors.GREEN,
             'COMPLETED',
