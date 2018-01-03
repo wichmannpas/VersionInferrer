@@ -93,6 +93,12 @@ class Resource:
 
     def serialize(self) -> dict:
         """Serialize into a dict."""
+        if not self.success:
+            return {
+                'url': self.url,
+                'webroot_path': self.webroot_path,
+                'success': self.success,
+            }
         return {
             'url': self.url,
             'webroot_path': self.webroot_path,
