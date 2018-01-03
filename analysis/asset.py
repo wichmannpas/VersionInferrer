@@ -66,6 +66,12 @@ class Asset(Resource):
     def serialize(self) -> dict:
         """Serialize into a dict."""
         base = super().serialize()
+        if not self.success:
+            base.update({
+                'expected_versions': self.expected_versions,
+                'using_versions': self.using_versions,
+            })
+            return base
         base.update({
             'expected_versions': self.expected_versions,
             'using_versions': self.using_versions,
