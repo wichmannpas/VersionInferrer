@@ -1,6 +1,7 @@
 import logging
 from typing import Set, Union
 from urllib.parse import urlparse
+from urllib3.exceptions import HTTPError
 
 from bs4 import BeautifulSoup
 
@@ -76,7 +77,7 @@ class Resource:
 
         try:
             self._response = requests.get(self.url, timeout=HTTP_TIMEOUT)
-        except RequestException:
+        except (HTTPError, RequestException):
             self._success = False
         else:
             self._success = True
