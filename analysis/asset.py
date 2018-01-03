@@ -1,6 +1,6 @@
 from typing import Set
 
-from analysis.resource import Resource
+from analysis.resource import Resource, RetrievalFailure
 from backends.software_version import SoftwareVersion
 from base.checksum import calculate_checksum
 from settings import BACKEND
