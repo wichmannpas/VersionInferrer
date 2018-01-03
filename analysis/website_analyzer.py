@@ -211,7 +211,8 @@ class WebsiteAnalyzer:
             if asset in self.retrieved_resources:
                 logging.info('asset already known, skipping')
                 continue
-            status_codes[asset.status_code] += 1
+            if asset.success:
+                status_codes[asset.status_code] += 1
             if asset.using_versions:
                 iteration_matching_assets += 1
             self.retrieved_resources.add(asset)

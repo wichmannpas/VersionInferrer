@@ -3,7 +3,7 @@ from typing import Set
 from analysis.resource import Resource, RetrievalFailure
 from backends.software_version import SoftwareVersion
 from base.checksum import calculate_checksum
-from settings import BACKEND
+from settings import BACKEND, FAILED_ASSET_WEIGHT
 
 
 class Asset(Resource):
@@ -13,13 +13,13 @@ class Asset(Resource):
     def __eq__(self, other) -> bool:
         if not super().__eq__(other):
             return False
-        if self.retrieved:
+        if self.retrieved and self.success:
             return self.checksum == other.checksum
         return True
 
     def __hash__(self) -> int:
         base_hash = super().__hash__()
-        if self.retrieved:
+        if self.retrieved and self.success:
             return base_hash ^ hash(self.checksum)
         return base_hash
 
@@ -55,6 +55,8 @@ class Asset(Resource):
     @property
     def idf_weight(self):
         """Get the idf weight for this asset."""
+        if not self.success:
+            return FAILED_ASSET_WEIGHT
         if not hasattr(self, '_idf_weight'):
             # cache in python object
             self._idf_weight = BACKEND.retrieve_static_file_idf_weight(
