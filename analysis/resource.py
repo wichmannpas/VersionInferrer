@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 import requests
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, ReadTimeout
 
 from analysis.wappalyzer_apps import wappalyzer_apps
 from backends.software_version import SoftwareVersion
@@ -76,7 +76,7 @@ class Resource:
 
         try:
             self._response = requests.get(self.url, timeout=HTTP_TIMEOUT)
-        except ConnectionError:
+        except (ConnectionError, ReadTimeout):
             self._success = False
         else:
             self._success = True
@@ -89,7 +89,7 @@ class Resource:
     @property
     def retrieved(self) -> bool:
         """Whether the resource has already been retrieved."""
-        return hasattr(self, '_response')
+        return hasattr(self, '_response') or hasattr(self, '_success')
 
     def serialize(self) -> dict:
         """Serialize into a dict."""
