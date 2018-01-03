@@ -76,5 +76,6 @@ class Scanner:
         try:
             self.scan_site(*args, **kwargs)
         except Exception as e:
+            print('failure for', args, kwargs)
             print_exc()
             logging.error(format_exc())
