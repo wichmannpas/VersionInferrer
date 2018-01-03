@@ -9,7 +9,7 @@ from requests.exceptions import ConnectionError
 
 from analysis.wappalyzer_apps import wappalyzer_apps
 from backends.software_version import SoftwareVersion
-from settings import BACKEND, HTML_PARSER
+from settings import BACKEND, HTML_PARSER, HTTP_TIMEOUT
 
 
 class RetrievalFailure(Exception):
@@ -75,7 +75,7 @@ class Resource:
         logging.info('Retrieving resource %s', self.url)
 
         try:
-            self._response = requests.get(self.url)
+            self._response = requests.get(self.url, timeout=HTTP_TIMEOUT)
         except ConnectionError:
             self._success = False
         else:

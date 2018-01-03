@@ -5,6 +5,8 @@ import sys
 # General settings
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+HTTP_TIMEOUT = 3
+
 
 # Analysis
 GUESS_IGNORE_DISTANCE = 3  # The minimum distance of the best guess strength to inferior guesses to ignore them
