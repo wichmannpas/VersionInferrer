@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 import requests
-from requests.exceptions import ConnectionError, ReadTimeout
+from requests.exceptions import RequestException
 
 from analysis.wappalyzer_apps import wappalyzer_apps
 from backends.software_version import SoftwareVersion
@@ -76,7 +76,7 @@ class Resource:
 
         try:
             self._response = requests.get(self.url, timeout=HTTP_TIMEOUT)
-        except (ConnectionError, ReadTimeout):
+        except RequestException:
             self._success = False
         else:
             self._success = True
