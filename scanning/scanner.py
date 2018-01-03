@@ -52,10 +52,7 @@ class Scanner:
         analyzer = WebsiteAnalyzer(
             primary_url=url)
         result = analyzer.analyze()
-        if result:
-            result = [
-                guess.serialize() for guess in result]
-        else:
+        if not result:
             result = False
         BACKEND.store_scan_result(url, result)
         print_info(

@@ -10,6 +10,7 @@ from backends.model import Model
 from backends.software_package import SoftwarePackage
 from backends.software_version import SoftwareVersion
 from backends.static_file import StaticFile
+from base.json import CustomJSONEncoder
 
 
 class PostgresqlBackend(GenericDatabaseBackend):
@@ -63,7 +64,7 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 %s,
                 %s
             )
-            ''', (url, json.dumps(result)))
+            ''', (url, json.dumps(result, cls=CustomJSONEncoder)))
 
     def store(self, element: Union[Model, List[Model]]) -> bool:
         """
