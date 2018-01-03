@@ -1,6 +1,8 @@
+import logging
 import os
 import pickle
 from concurrent.futures import ProcessPoolExecutor
+from traceback import format_exc, print_exc
 from urllib.parse import urlparse
 
 from analysis.website_analyzer import WebsiteAnalyzer
@@ -27,7 +29,7 @@ class Scanner:
         with ProcessPoolExecutor(max_workers=self.concurrent) as executor:
             for site in sites:
                 futures.append(executor.submit(
-                    self.scan_site, 'http://{}'.format(site.domain)))
+                    self._monitor_scan_site, 'http://{}'.format(site.domain)))
             for future in futures:
                 # access result to get exceptions etc
                 future.result()
@@ -66,3 +68,13 @@ class Scanner:
             colors.GREEN,
             'COMPLETED',
             url)
+
+    def _monitor_scan_site(self, *args, **kwargs):
+        """
+        Execute the scan_site method and catch and print all exceptions.
+        """
+        try:
+            self.scan_site(*args, **kwargs)
+        except Exception as e:
+            print_exc()
+            logging.error(format_exc())
