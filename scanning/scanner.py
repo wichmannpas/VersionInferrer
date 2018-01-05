@@ -19,9 +19,11 @@ class Scanner:
     """
     concurrent = 80
 
-    def scan_sites(self, count: int):
+    def scan_sites(self, count: int, skip: int = 0):
         """Scan first count sites of majestic top million."""
-        sites = majestic_million.get_sites(1, count)
+        start = count - skip
+        end = start + count
+        sites = majestic_million.get_sites(start, end)
         futures = []
         assert isinstance(
             BACKEND, PostgresqlBackend), 'postgresql backend required for scanning'
