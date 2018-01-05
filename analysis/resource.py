@@ -145,6 +145,8 @@ class Resource:
             return set()
 
         components = generator_tag.split()
+        if not components:
+            return result
         # TODO: Maybe there is already a version in the generator tag ...
         # TODO: Therefore, do not throw non-first components away
         # TODO: Software packages with spaces in name
