@@ -40,7 +40,8 @@ def get_sites(rank: int, count: int) -> Iterable[MajesticMillionSite]:
     start = rank  # first line is headline, therefore index begins at 1
     end = start + count - 1
     if start not in range(1, 1000001) or end not in range(1, 1000001):
-        raise ValueError('valid indexes are 1 to 1 million.')
+        raise ValueError(
+            'valid indexes are 1 to 1 million. (requested: %s-%s)' % (start, end))
 
     result = []
     with open(majestic_million_path) as csvfile:
