@@ -21,8 +21,9 @@ class Scanner:
 
     def scan_sites(self, count: int, skip: int = 0):
         """Scan first count sites of majestic top million."""
-        start = skip
-        end = count + skip
+        # majestic million is 1-indexed
+        start = skip + 1
+        end = count + skip + 1
         sites = majestic_million.get_sites(start, end)
         futures = []
         assert isinstance(
