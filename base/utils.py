@@ -70,7 +70,7 @@ def match_str_to_software_version(package_name: str, version_name: str) -> Set[S
                 any(name.lower() == package_name.lower()
                     for name in package.alternative_names)):
             for version in BACKEND.retrieve_versions(package):
-                if version.name.lower().startswith(version_name.lower()):
+                if version.name.lower() == version_name.lower():
                     matches.add(version)
     return matches
 
