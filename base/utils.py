@@ -1,11 +1,13 @@
 import os
 from urllib.parse import urljoin
-from typing import Iterable
+from typing import Iterable, Set
 
 import msgpack
 from url_normalize import url_normalize
 
 from backends.software_version import SoftwareVersion
+
+from settings import BACKEND
 
 
 def join_paths(*args):
@@ -58,6 +60,19 @@ def normalize_data(data: object) -> bytes:
 
     # use msgpack without further normalization. Might raise TypeError
     return msgpack.dumps(data)
+
+
+def match_str_to_software_version(package_name: str, version_name: str) -> Set[SoftwareVersion]:
+    """Match strings to all software versions matching that name."""
+    matches = set()
+    for package in BACKEND.retrieve_packages():
+        if (package.name.lower() == package_name.lower() or
+                any(name.lower() == package_name.lower()
+                    for name in package.alternative_names)):
+            for version in BACKEND.retrieve_versions(package):
+                if version.name.lower().startswith(version_name.lower()):
+                    matches.add(version)
+    return matches
 
 
 def most_recent_version(versions: Iterable[SoftwareVersion]) -> SoftwareVersion:
