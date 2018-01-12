@@ -10,7 +10,7 @@ def evaluate(arguments: Namespace):
     """Evaluate the scan results."""
     print('Available results:', len(BACKEND.retrieve_scanned_sites()))
     print('Results with guesses:', result_count())
-    #print('Guess counts:', guess_counts())
+    print('Guess counts:', guess_counts())
     print('Package counts:', package_counts())
     print('Distinct packages count:', distinct_packages_count())
 
