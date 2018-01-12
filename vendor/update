@@ -3,3 +3,7 @@ BASEDIR=$(dirname "$0")
 
 wget -q -O ${BASEDIR}/wappalyzer_apps.json https://raw.githubusercontent.com/AliasIO/Wappalyzer/master/src/apps.json
 wget -q -O ${BASEDIR}/majestic_million.csv https://downloads.majestic.com/majestic_million.csv
+
+pushd $BASEDIR/.. > /dev/null
+./update_cve.py
+popd > /dev/null
