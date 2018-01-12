@@ -27,7 +27,7 @@ def result_count() -> int:
     WHERE
         r.result->>'result' != 'false'
     '''
-    return _raw_query(query)[0]
+    return _raw_query(query)[0][0]
 
 
 def guess_counts() -> Dict[int, int]:
