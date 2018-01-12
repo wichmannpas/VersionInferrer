@@ -66,7 +66,7 @@ def package_counts() -> Dict[int, int]:
         sub.software_package
     '''
     return {
-        guesses: count
+        software_package: count
         for software_package, count in _raw_query(query)
     }
 
