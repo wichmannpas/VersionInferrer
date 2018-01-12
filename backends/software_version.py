@@ -1,4 +1,7 @@
+import os
+import pickle
 from datetime import datetime
+from subprocess import call
 
 from backends.model import Model
 from backends.software_package import SoftwarePackage
@@ -36,3 +39,13 @@ class SoftwareVersion(Model):
             'internal_identifier': self.internal_identifier,
             'release_date': self.release_date.isoformat(),
         }
+
+    @property
+    def vulnerable(self) -> bool:
+        """Check whether the version has known vulnerabilities."""
+        from settings import CVE_STATISTICS_FILE
+        if not os.path.isfile(CVE_STATISTICS_FILE):
+            call(['vendor/update'])
+        with open(CVE_STATISTICS_FILE, 'rb') as fh:
+            cve_statistics = pickle.load(fh)
+        return bool(cve_statistics.get(self))
