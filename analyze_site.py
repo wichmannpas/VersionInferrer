@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import logging
+import sys
 from argparse import ArgumentParser, Namespace
 
 from analysis.website_analyzer import WebsiteAnalyzer
@@ -29,8 +30,13 @@ def analyze(arguments: Namespace):
     if not arguments.json_only:
         print(analyzer.get_statistics())
 
+    json_file = sys.stdout
+    if arguments.json_file:
+        # TODO: make sure file is closed again
+        json_file = open(arguments.json_file, 'w')
+
     if not result:
-        print(json.dumps({}))
+        json.dump({}, json_file)
         return
 
     if not arguments.json_only:
@@ -44,10 +50,10 @@ def analyze(arguments: Namespace):
             'More recent version {} released, possibly outdated!'.format(
                 more_recent))
 
-    print(json.dumps({
+    json.dump({
         'result': result,
         'more_recent': more_recent,
-    }, cls=CustomJSONEncoder))
+    }, json_file, cls=CustomJSONEncoder)
 
 
 if __name__ == '__main__':
@@ -62,5 +68,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--json-only', action='store_true',
         help='Only output json data to stdout.')
+    parser.add_argument(
+        '--json-file',
+        help='Write JSON output to file instead of stdout.')
 
     analyze(parser.parse_args())
