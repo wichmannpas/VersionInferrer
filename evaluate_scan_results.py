@@ -8,10 +8,26 @@ from settings import BACKEND
 
 def evaluate(arguments: Namespace):
     """Evaluate the scan results."""
-    #print('Available results:', len(BACKEND.retrieve_scanned_sites()))
+    print('Available results:', len(BACKEND.retrieve_scanned_sites()))
+    print('Results with guesses:', result_count())
     #print('Guess counts:', guess_counts())
     print('Package counts:', package_counts())
     print('Distinct packages count:', distinct_packages_count())
+
+
+def result_count() -> int:
+    """
+    Number of results containing guesses.
+    """
+    query = '''
+    SELECT
+        COUNT(*)
+    FROM
+        scan_result r
+    WHERE
+        r.result->>'result' != 'false'
+    '''
+    return _raw_query(query)[0]
 
 
 def guess_counts() -> Dict[int, int]:
