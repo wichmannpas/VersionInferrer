@@ -49,6 +49,19 @@ class PostgresqlBackend(GenericDatabaseBackend):
             if result:
                 return result[0]
 
+    def retrieve_scanned_sites(self) -> List[str]:
+        """
+        Retrieve a list of the site URLs that have an existing scan result.
+        """
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            SELECT
+                r.url
+            FROM
+                scan_result r
+            ''')
+            return [r[0] for r in cursor.fetchall()]
+
     def store_scan_result(self, url: str, result: object):
         """
         Store a scan result to the backend.
