@@ -11,6 +11,7 @@ def evaluate(arguments: Namespace):
     #print('Available results:', len(BACKEND.retrieve_scanned_sites()))
     #print('Guess counts:', guess_counts())
     print('Package counts:', package_counts())
+    print('Distinct packages count:', distinct_packages_count())
 
 
 def guess_counts() -> Dict[int, int]:
@@ -68,6 +69,47 @@ def package_counts() -> Dict[int, int]:
     return {
         software_package: count
         for software_package, count in _raw_query(query)
+    }
+
+
+def distinct_packages_count() -> Dict[int, int]:
+    """
+    Count how often k different packages were guessed.
+    """
+    query = '''
+    SELECT
+        0 package_count,
+        COUNT(*)
+    FROM
+        scan_result r
+    WHERE
+        r.result->>'result' = 'false'
+    UNION SELECT
+        sub2.package_count,
+        COUNT(*)
+    FROM (
+        SELECT
+            sub.url,
+            COUNT(*) package_count
+        FROM (
+            SELECT
+                r.url,
+                jsonb_array_elements(r.result->'result')->'software_version'->'software_package'->>'name' software_package
+            FROM
+                scan_result r
+             WHERE
+                 r.result->>'result' != 'false'
+             GROUP BY
+                 url,
+                 software_package) sub
+         GROUP BY
+             sub.url) sub2
+     GROUP BY
+         sub2.package_count
+    '''
+    return {
+        package_count: count
+        for package_count, count in _raw_query(query)
     }
 
 
