@@ -1,6 +1,6 @@
 import json
 from contextlib import closing
-from typing import List, Union
+from typing import Iterable, List, Tuple, Union
 
 import psycopg2
 
@@ -48,6 +48,22 @@ class PostgresqlBackend(GenericDatabaseBackend):
             result = cursor.fetchone()
             if result:
                 return result[0]
+
+    def retrieve_scan_results(self, urls: Iterable[str]) -> List[Tuple[str, object]]:
+        """
+        Bulk retrieve scan results from the backend.
+        """
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            SELECT
+                r.url,
+                r.result
+            FROM
+                scan_result r
+            WHERE
+                r.url IN %s
+            ''', (tuple(urls),))
+            return cursor.fetchall()
 
     def retrieve_scanned_sites(self) -> List[str]:
         """
