@@ -23,6 +23,17 @@ def use_cache(f):
     return decorated
 
 
+def use_result_cache(f):
+    def decorated(self, *args, **kwargs):
+        signature = f.__name__ + str(args) + str(kwargs)
+        if signature in self._result_cache:
+            return self._result_cache[signature]
+        result = f(self, *args, **kwargs)
+        self._result_cache[signature] = result
+        return result
+    return decorated
+
+
 class GenericDatabaseBackend(Backend):
     """The backend handling the SQLite communication."""
     # _operator: str
@@ -30,6 +41,7 @@ class GenericDatabaseBackend(Backend):
 
     def __init__(self, *args, **kwargs):
         self._cache = {}
+        self._result_cache = {}
 
         self._args, self._kwargs = args, kwargs
         self._open_connection(*args, **kwargs)
@@ -111,6 +123,7 @@ class GenericDatabaseBackend(Backend):
             total_version_count /
             global_using_versions_count, 10)
 
+    @use_result_cache
     def retrieve_packages(self) -> Set[SoftwarePackage]:
         """Retrieve all available packages."""
         with closing(self._connection.cursor()) as cursor:
@@ -300,6 +313,7 @@ class GenericDatabaseBackend(Backend):
             ''', (webroot_path,))
             return self._get_software_versions_from_raw(cursor.fetchall())
 
+    @use_result_cache
     def retrieve_versions(
             self, software_package: SoftwarePackage,
             indexed_only: bool = True) -> Set[SoftwareVersion]:
