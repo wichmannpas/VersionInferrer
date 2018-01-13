@@ -2,6 +2,7 @@
 import sys
 from argparse import ArgumentParser, Namespace
 from contextlib import closing
+from pprint import pprint
 from typing import Dict, Tuple
 
 from tqdm import tqdm
@@ -13,11 +14,20 @@ from settings import BACKEND
 def evaluate(arguments: Namespace):
     """Evaluate the scan results."""
     print('Available results:', len(BACKEND.retrieve_scanned_sites()))
+
     print('Results with guesses:', result_count())
-    print('Guess counts:', guess_counts())
-    print('Package counts:', package_counts())
-    print('Distinct packages count:', distinct_packages_count())
-    print('Vulnerable versions', vulnerable_versions())
+
+    print('\nGuess counts:')
+    pprint(guess_counts())
+
+    print('\nPackage counts:')
+    pprint(package_counts())
+
+    print('\nDistinct packages count:')
+    pprint(distinct_packages_count())
+
+    print('\nVulnerable versions:')
+    pprint(vulnerable_versions())
 
 
 def result_count() -> int:
