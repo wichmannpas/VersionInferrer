@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+import sys
 from argparse import ArgumentParser, Namespace
 from contextlib import closing
-from typing import Dict
+from typing import Dict, Tuple
 
+from tqdm import tqdm
+
+from base.utils import match_str_to_software_version, most_recent_version
 from settings import BACKEND
 
 
@@ -13,6 +17,7 @@ def evaluate(arguments: Namespace):
     print('Guess counts:', guess_counts())
     print('Package counts:', package_counts())
     print('Distinct packages count:', distinct_packages_count())
+    print('Vulnerable versions', vulnerable_versions())
 
 
 def result_count() -> int:
@@ -126,6 +131,53 @@ def distinct_packages_count() -> Dict[int, int]:
     return {
         package_count: count
         for package_count, count in _raw_query(query)
+    }
+
+
+def vulnerable_versions() -> Dict[str, int]:
+    """
+    Aggregate the number of scan results with detected vulnerable versions:
+    * total count (vulnerable and non-vulnerable)
+    * total count with guess (vulnerable and non-vulnerable)
+    * in the most recent version guessed
+    * in all guessed version
+    * in any version guessed
+    """
+    total, total_with_guess, most_recent_vulnerable, all_vulnerable, any_vulnerable = 0, 0, 0, 0, 0
+
+    urls = BACKEND.retrieve_scanned_sites()
+    for url in tqdm(urls, leave=False):
+        total += 1
+
+        result = BACKEND.retrieve_scan_result(url)['result']
+        if not result:
+            continue
+        versions = {
+            version
+            for guess in result
+            for version in match_str_to_software_version(
+                guess['software_version']['software_package']['name'],
+                guess['software_version']['name'])
+        }
+
+        total_with_guess += 1
+
+        most_recent = most_recent_version(versions)
+        if most_recent.vulnerable:
+            most_recent_vulnerable += 1
+
+        if all(version.vulnerable for version in versions):
+            all_vulnerable += 1
+
+        if any(version.vulnerable for version in versions):
+            any_vulnerable += 1
+
+    return {
+        'total': total,
+        'total_with_guess': total_with_guess,
+        'most_recent_vulnerable': most_recent_vulnerable,
+        'all_vulnerable': all_vulnerable,
+        'any_vulnerable': any_vulnerable,
     }
 
 
