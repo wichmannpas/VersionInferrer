@@ -16,7 +16,7 @@ class Joomla(SoftwareDefinition):
     provider = GitTagProvider(
         software_package=software_package,
         url='https://github.com/joomla/joomla-cms.git',
-        version_pattern=re.compile(r'(\d+\.){3}.*')
+        version_pattern=re.compile(r'^\d+\.\d+\.\d+$')
     )
     path_map = {
         '/': '/',
