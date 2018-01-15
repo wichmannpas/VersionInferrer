@@ -42,7 +42,7 @@ def cve_stats_for_year(year: int) -> Dict[SoftwareVersion, Set[str]]:
     url = 'https://static.nvd.nist.gov/feeds/json/cve/1.0/nvdcve-1.0-{}.json.gz'.format(
         year)
     cve_items = json.loads(
-        decompress(requests.get(url).content))['CVE_Items']
+        decompress(requests.get(url).content).decode())['CVE_Items']
 
     statistics = defaultdict(set)
     for cve_item in cve_items:
