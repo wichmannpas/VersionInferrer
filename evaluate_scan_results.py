@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 from argparse import ArgumentParser, Namespace
+from collections import defaultdict
 from contextlib import closing
 from pprint import pprint
 from typing import Dict, Tuple
@@ -28,6 +29,9 @@ def evaluate(arguments: Namespace):
 
     print('\nVulnerable versions:')
     pprint(vulnerable_versions())
+
+    print('\nVulnerable versions by package:')
+    pprint(vulnerable_versions_by_package())
 
 
 def result_count() -> int:
@@ -189,6 +193,52 @@ def vulnerable_versions() -> Dict[str, int]:
         'all_vulnerable': all_vulnerable,
         'any_vulnerable': any_vulnerable,
     }
+
+
+def vulnerable_versions_by_package() -> Dict[str, Dict[str, int]]:
+    """
+    Aggregate the number of scan results with detected vulnerable versions
+    by package.
+
+    This uses the invariant from the previous results that results have at
+    most 1 different package among their guesses.
+    """
+    agg = defaultdict(lambda: {
+        'total': 0,
+        'all_vulnerable': 0,
+        'any_vulnerable': 0,
+        'most_recent_vulnerable': 0,
+    })
+
+    urls = BACKEND.retrieve_scanned_sites()
+    for url in tqdm(urls, leave=False):
+        result = BACKEND.retrieve_scan_result(url)['result']
+        if not result:
+            continue
+
+        package = result[0]['software_version']['software_package']['name']
+
+        agg[package]['total'] += 1
+
+        versions = {
+            version
+            for guess in result
+            for version in match_str_to_software_version(
+                guess['software_version']['software_package']['name'],
+                guess['software_version']['name'])
+        }
+
+        most_recent = most_recent_version(versions)
+        if most_recent.vulnerable:
+            agg[package]['most_recent_vulnerable'] += 1
+
+        if all(version.vulnerable for version in versions):
+            agg[package]['all_vulnerable'] += 1
+
+        if any(version.vulnerable for version in versions):
+            agg[package]['any_vulnerable'] += 1
+
+    return dict(agg)
 
 
 def _raw_query(query):
