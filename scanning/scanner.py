@@ -30,14 +30,16 @@ class Scanner:
             BACKEND, PostgresqlBackend), 'postgresql backend required for scanning'
         BACKEND.initialize_scan_results()
         with ProcessPoolExecutor(max_workers=self.concurrent) as executor:
+            index = start
             for site in sites:
                 futures.append(executor.submit(
-                    self._monitor_scan_site, 'http://{}'.format(site.domain)))
+                    self._monitor_scan_site, 'http://{}'.format(site.domain), index))
+                index += 1
             for future in futures:
                 # access result to get exceptions etc
                 future.result()
 
-    def scan_site(self, url: str):
+    def scan_site(self, url: str, index: int):
         """Scan a single site."""
         BACKEND.reopen_connection()
 
@@ -47,12 +49,12 @@ class Scanner:
         if result is not None:
             print_info(
                 colors.YELLOW,
-                'SKIPPING',
+                '({:10d}) SKIPPING'.format(index),
                 url)
             return
         print_info(
             colors.PURPLE,
-            'SCANNING',
+            '({:10d}) SCANNING'.format(index),
             url)
         analyzer = WebsiteAnalyzer(
             primary_url=url)
