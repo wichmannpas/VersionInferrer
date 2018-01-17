@@ -3,6 +3,7 @@ import os
 import pickle
 from concurrent.futures import ProcessPoolExecutor
 from traceback import format_exc, print_exc
+from typing import List, Union
 from urllib.parse import urlparse
 
 from analysis.website_analyzer import WebsiteAnalyzer
@@ -19,12 +20,15 @@ class Scanner:
     """
     concurrent = 80
 
-    def scan_sites(self, count: int, skip: int = 0):
+    def scan_sites(self, count: int, domains: Union[List[str], None] = None, skip: int = 0):
         """Scan first count sites of majestic top million."""
         # majestic million is 1-indexed
         start = skip + 1
         end = count + skip + 1
         sites = majestic_million.get_sites(start, end)
+        if domains:
+            # use provided domains instead of majestic
+            sites = domains
         futures = []
         assert isinstance(
             BACKEND, PostgresqlBackend), 'postgresql backend required for scanning'
@@ -32,8 +36,12 @@ class Scanner:
         with ProcessPoolExecutor(max_workers=self.concurrent) as executor:
             index = start
             for site in sites:
+                domain = site
+                if isinstance(site, majestic_million.MajesticMillionSite):
+                    domain = site.domain
+                url = 'http://{}'.format(domain)
                 futures.append(executor.submit(
-                    self._monitor_scan_site, 'http://{}'.format(site.domain), index))
+                    self._monitor_scan_site, url, index))
                 index += 1
             for future in futures:
                 # access result to get exceptions etc
