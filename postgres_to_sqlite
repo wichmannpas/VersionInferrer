@@ -20,7 +20,7 @@ DROP INDEX static_file_use_static_file_id;
 EOF
 
 
-(echo "BEGIN TRANSACTION;" && (sudo -iu postgres pg_dump $POSTGRES_DB --column-inserts --data-only | sed "s/^SE.*$//" | sed "s/ true);$/1);/" | sed "s/ false);$/0);/") && echo "END TRANSACTION;") | pv | sqlite3 $SQLITE_DB
+(echo "BEGIN TRANSACTION;" && (sudo -iu postgres pg_dump $POSTGRES_DB -T scan_result --column-inserts --data-only | sed "s/^SE.*$//" | sed "s/ true);$/1);/" | sed "s/ false);$/0);/") && echo "END TRANSACTION;") | pv | sqlite3 $SQLITE_DB
 
 # Convert hex checksums from dump to actual binary values and fix software package alternative names
 python3 -c "exec('''
