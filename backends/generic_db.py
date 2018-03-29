@@ -542,6 +542,66 @@ class GenericDatabaseBackend(Backend):
                 return True
         raise BackendException('unsupported model type')
 
+    def version_delta(
+            self,
+            a: SoftwareVersion,
+            b: SoftwareVersion) -> Set[
+                Tuple[
+                    Union[None, StaticFile],
+                    Union[None, StaticFile]]]:
+        """
+        Get the delta between the static files of two software versions.
+
+        A set of tuples is returned.
+        * None, StaticFile means that a static file was added at a path where none was used before
+        * StaticFile, None means that a static file was removed from a path
+        * StaticFile, StaticFile means that a static file at a specific path was changed
+        """
+        with closing(self._connection.cursor()) as cursor:
+            operators, list_params = self._expand_list_operators(self._get_id(version) for version in (a, b))
+            cursor.execute('''
+            SELECT
+                sf.id,
+                sf.src_path,
+                sf.webroot_path,
+                sf.checksum,
+                us.software_version_id
+            FROM
+                static_file sf
+            JOIN
+                static_file_use us
+            ON
+                us.static_file_id=sf.id
+            WHERE
+                us.software_version_id IN ''' + operators + '''
+            ''', list_params)
+
+            a_files = {}
+            b_files = {}
+            for static_file in (
+                    StaticFile(
+                        a if software_version_id == self._get_id(a) else b,
+                        src_path,
+                        webroot_path,
+                        self._unpack_binary(checksum))
+                    for static_file_id, src_path, webroot_path, checksum, software_version_id
+                    in cursor.fetchall()):
+                if static_file.software_version == a:
+                    a_files[static_file.webroot_path] = static_file
+                else:
+                    b_files[static_file.webroot_path] = static_file
+            result = set()
+            for static_file in a_files.values():
+                if static_file.webroot_path not in b_files:
+                    result.add((static_file, None))
+                elif static_file.checksum != b_files[static_file.webroot_path].checksum:
+                    result.add((static_file, b_files[static_file.webroot_path]))
+            for static_file in b_files.values():
+                if static_file.webroot_path not in a_files:
+                    result.add((None, static_file))
+                # no need to check for changed files that exist in both versions here
+        return result
+
     @use_cache
     def _get_id(self, element: Model) -> Union[int, None]:
         """Get the id of a model instance if it exists and has an id field."""

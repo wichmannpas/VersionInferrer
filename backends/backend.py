@@ -105,6 +105,23 @@ class Backend(metaclass=ABCMeta):
     def store(self, element: Union[Model, List[Model]]):
         """Insert or update an instance of a Model subclass."""
 
+    @abstractmethod
+    def version_delta(
+            self,
+            a: SoftwareVersion,
+            b: SoftwareVersion) -> Set[
+                Tuple[
+                    Union[None, StaticFile],
+                    Union[None, StaticFile]]]:
+        """
+        Get the delta between the static files of two software versions.
+
+        A set of tuples is returned.
+        * None, StaticFile means that a static file was added at a path where none was used before
+        * StaticFile, None means that a static file was removed from a path
+        * StaticFile, StaticFile means that a static file at a specific path was changed
+        """
+
 
 class BackendException(Exception):
     """An exception occuring in a backend."""
