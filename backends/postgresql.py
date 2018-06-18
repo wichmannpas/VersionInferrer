@@ -28,11 +28,17 @@ class PostgresqlBackend(GenericDatabaseBackend):
             cursor.execute('''
             CREATE TABLE IF NOT EXISTS scan_result (
                 url TEXT PRIMARY KEY NOT NULL,
+                scan_identifier VARCHAR NOT NULL,
                 result JSONB
             )
             ''')
+            cursor.execute('''
+            CREATE INDEX IF NOT EXISTS
+                scan_result_identifier
+            ON scan_result(scan_identifier)
+            ''')
 
-    def retrieve_scan_result(self, url: str) -> Union[object, None]:
+    def retrieve_scan_result(self, url: str, scan_identifier: str) -> Union[object, None]:
         """
         Retrieve a scan result from the backend.
         """
@@ -43,13 +49,14 @@ class PostgresqlBackend(GenericDatabaseBackend):
             FROM
                 scan_result r
             WHERE
-                r.url = %s
-            ''', (url,))
+                r.url = %s AND
+                r.scan_identifier = %s
+            ''', (url, scan_identifier))
             result = cursor.fetchone()
             if result:
                 return result[0]
 
-    def retrieve_scan_results(self, urls: Iterable[str]) -> List[Tuple[str, object]]:
+    def retrieve_scan_results(self, urls: Iterable[str], scan_identifier: str) -> List[Tuple[str, object]]:
         """
         Bulk retrieve scan results from the backend.
         """
@@ -61,11 +68,12 @@ class PostgresqlBackend(GenericDatabaseBackend):
             FROM
                 scan_result r
             WHERE
-                r.url IN %s
-            ''', (tuple(urls),))
+                r.url IN %s AND
+                r.scan_identifier = %s
+            ''', (tuple(urls), scan_identifier))
             return cursor.fetchall()
 
-    def retrieve_scanned_sites(self) -> List[str]:
+    def retrieve_scanned_sites(self, scan_identifier: str) -> List[str]:
         """
         Retrieve a list of the site URLs that have an existing scan result.
         """
@@ -75,10 +83,12 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 r.url
             FROM
                 scan_result r
-            ''')
+            WHERE
+                r.scan_identifier = %s
+            ''', (scan_identifier, ))
             return [r[0] for r in cursor.fetchall()]
 
-    def store_scan_result(self, url: str, result: object):
+    def store_scan_result(self, url: str, result: object, scan_identifier: str):
         """
         Store a scan result to the backend.
         """
@@ -87,13 +97,15 @@ class PostgresqlBackend(GenericDatabaseBackend):
             INSERT
             INTO scan_result (
                 url,
+                scan_identifier,
                 result
             )
             VALUES (
                 %s,
+                %s,
                 %s
             )
-            ''', (url, json.dumps(result, cls=CustomJSONEncoder)))
+            ''', (url, scan_identifier, json.dumps(result, cls=CustomJSONEncoder)))
 
     def store(self, element: Union[Model, List[Model]]) -> bool:
         """

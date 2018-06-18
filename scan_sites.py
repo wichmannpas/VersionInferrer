@@ -6,7 +6,7 @@ from scanning.scanner import Scanner
 
 def scan(arguments: Namespace):
     """Scan sites."""
-    scanner = Scanner()
+    scanner = Scanner(arguments.identifier)
     if arguments.concurrent:
         scanner.concurrent = arguments.concurrent
 
@@ -24,4 +24,5 @@ if __name__ == '__main__':
     parser.add_argument('--concurrent', '-c', type=int, default=80)
     parser.add_argument('--skip', '-s', type=int, default=0)
     parser.add_argument('--urls-from-file', type=str, help='Read newline-separated URLs from file instead of majestic million')
+    parser.add_argument('--identifier', '-i', type=str, help='An identifier for this scan.', required=True)
     scan(parser.parse_args())

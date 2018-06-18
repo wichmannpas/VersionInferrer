@@ -19,6 +19,10 @@ class Scanner:
     sites.
     """
     concurrent = 80
+    # scan_identifier: str
+
+    def __init__(self, scan_identifier: str):
+        self.scan_identifier = scan_identifier
 
     def scan_sites(self, count: int, urls: Union[List[str], None] = None, skip: int = 0):
         """Scan first count sites of majestic top million."""
@@ -52,7 +56,7 @@ class Scanner:
 
         domain = urlparse(url).hostname
 
-        result = BACKEND.retrieve_scan_result(url)
+        result = BACKEND.retrieve_scan_result(url, self.scan_identifier)
         if result is not None:
             print_info(
                 colors.YELLOW,
@@ -75,7 +79,7 @@ class Scanner:
         BACKEND.store_scan_result(url, {
             'result': result,
             'more_recent': more_recent,
-        })
+        }, self.scan_identifier)
         print_info(
             colors.GREEN,
             'COMPLETED',
