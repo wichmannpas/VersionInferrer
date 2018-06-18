@@ -14,27 +14,27 @@ from settings import BACKEND
 
 def evaluate(arguments: Namespace):
     """Evaluate the scan results."""
-    print('Available results:', len(BACKEND.retrieve_scanned_sites()))
+    print('Available results:', len(BACKEND.retrieve_scanned_sites(arguments.identifier)))
 
-    print('Results with guesses:', result_count())
+    print('Results with guesses:', result_count(arguments))
 
     print('\nGuess counts:')
-    pprint(guess_counts())
+    pprint(guess_counts(arguments))
 
     print('\nPackage counts:')
-    pprint(package_counts())
+    pprint(package_counts(arguments))
 
     print('\nDistinct packages count:')
-    pprint(distinct_packages_count())
+    pprint(distinct_packages_count(arguments))
 
     print('\nVulnerable versions:')
-    pprint(vulnerable_versions())
+    pprint(vulnerable_versions(arguments))
 
     print('\nVulnerable versions by package:')
-    pprint(vulnerable_versions_by_package())
+    pprint(vulnerable_versions_by_package(arguments))
 
 
-def result_count() -> int:
+def result_count(arguments: Namespace) -> int:
     """
     Number of results containing guesses.
     """
@@ -44,12 +44,13 @@ def result_count() -> int:
     FROM
         scan_result r
     WHERE
-        r.result->>'result' != 'false'
+        r.result->>'result' != 'false' AND
+        r.scan_identifier = %s
     '''
-    return _raw_query(query)[0][0]
+    return _raw_query(query, (arguments.identifier,))[0][0]
 
 
-def guess_counts() -> Dict[int, int]:
+def guess_counts(arguments: Namespace) -> Dict[int, int]:
     """
     Get the number of results with specific guess count.
     {
@@ -63,23 +64,28 @@ def guess_counts() -> Dict[int, int]:
     FROM
         scan_result r
     WHERE
-        r.result->>'result' = 'false'
+        r.result->>'result' = 'false' AND
+        r.scan_identifier = %(scan_identifier)s
     UNION SELECT
         JSONB_ARRAY_LENGTH(r.result->'result') guesses,
         COUNT(*)
     FROM
         scan_result r
     WHERE
-        r.result->>'result' != 'false'
+        r.result->>'result' != 'false' AND
+        r.scan_identifier = %(scan_identifier)s
     GROUP BY guesses
     '''
     return {
         guesses: count
-        for guesses, count in _raw_query(query)
+        for guesses, count in _raw_query(
+            query,
+            {'scan_identifier': arguments.identifier}
+        )
     }
 
 
-def package_counts() -> Dict[int, int]:
+def package_counts(arguments: Namespace) -> Dict[int, int]:
     """
     Aggregate count of results guessing each package.
     """
@@ -94,7 +100,8 @@ def package_counts() -> Dict[int, int]:
         FROM
             scan_result r
         WHERE
-            r.result->>'result' != 'false'
+            r.result->>'result' != 'false' AND
+            r.scan_identifier = %s
         GROUP BY
             url,
             software_package) sub
@@ -103,11 +110,11 @@ def package_counts() -> Dict[int, int]:
     '''
     return {
         software_package: count
-        for software_package, count in _raw_query(query)
+        for software_package, count in _raw_query(query, (arguments.identifier, ))
     }
 
 
-def distinct_packages_count() -> Dict[int, int]:
+def distinct_packages_count(arguments: Namespace) -> Dict[int, int]:
     """
     Count how often k different packages were guessed.
     """
@@ -118,7 +125,8 @@ def distinct_packages_count() -> Dict[int, int]:
     FROM
         scan_result r
     WHERE
-        r.result->>'result' = 'false'
+        r.result->>'result' = 'false' AND
+        r.scan_identifier = %(scan_identifier)s
     UNION SELECT
         sub2.package_count,
         COUNT(*)
@@ -132,23 +140,27 @@ def distinct_packages_count() -> Dict[int, int]:
                 jsonb_array_elements(r.result->'result')->'software_version'->'software_package'->>'name' software_package
             FROM
                 scan_result r
-             WHERE
-                 r.result->>'result' != 'false'
-             GROUP BY
-                 url,
-                 software_package) sub
-         GROUP BY
+            WHERE
+                r.result->>'result' != 'false' AND
+                r.scan_identifier = %(scan_identifier)s
+            GROUP BY
+                url,
+                software_package) sub
+        GROUP BY
              sub.url) sub2
-     GROUP BY
-         sub2.package_count
+    GROUP BY
+        sub2.package_count
     '''
     return {
         package_count: count
-        for package_count, count in _raw_query(query)
+        for package_count, count in _raw_query(
+            query,
+            {'scan_identifier': arguments.identifier}
+        )
     }
 
 
-def vulnerable_versions() -> Dict[str, int]:
+def vulnerable_versions(arguments: Namespace) -> Dict[str, int]:
     """
     Aggregate the number of scan results with detected vulnerable versions:
     * total count (vulnerable and non-vulnerable)
@@ -159,11 +171,11 @@ def vulnerable_versions() -> Dict[str, int]:
     """
     total, total_with_guess, most_recent_vulnerable, all_vulnerable, any_vulnerable = 0, 0, 0, 0, 0
 
-    urls = BACKEND.retrieve_scanned_sites()
+    urls = BACKEND.retrieve_scanned_sites(arguments.identifier)
     for url in tqdm(urls, leave=False):
         total += 1
 
-        result = BACKEND.retrieve_scan_result(url)['result']
+        result = BACKEND.retrieve_scan_result(url, arguments.identifier)['result']
         if not result:
             continue
         versions = {
@@ -195,7 +207,7 @@ def vulnerable_versions() -> Dict[str, int]:
     }
 
 
-def vulnerable_versions_by_package() -> Dict[str, Dict[str, int]]:
+def vulnerable_versions_by_package(arguments: Namespace) -> Dict[str, Dict[str, int]]:
     """
     Aggregate the number of scan results with detected vulnerable versions
     by package.
@@ -210,9 +222,9 @@ def vulnerable_versions_by_package() -> Dict[str, Dict[str, int]]:
         'most_recent_vulnerable': 0,
     })
 
-    urls = BACKEND.retrieve_scanned_sites()
+    urls = BACKEND.retrieve_scanned_sites(arguments.identifier)
     for url in tqdm(urls, leave=False):
-        result = BACKEND.retrieve_scan_result(url)['result']
+        result = BACKEND.retrieve_scan_result(url, arguments.identifier)['result']
         if not result:
             continue
 
@@ -241,13 +253,16 @@ def vulnerable_versions_by_package() -> Dict[str, Dict[str, int]]:
     return dict(agg)
 
 
-def _raw_query(query):
+def _raw_query(query, params=None):
     """Run a raw query in the backend."""
     with closing(BACKEND._connection.cursor()) as cursor:
-        cursor.execute(query)
+        cursor.execute(query, params)
         return cursor.fetchall()
 
 
 if __name__ == '__main__':
     parser = ArgumentParser()
+    parser.add_argument(
+        '--identifier', '-i', type=str,
+        help='The identifier of the scans to evaluate.', required=True)
     evaluate(parser.parse_args())
