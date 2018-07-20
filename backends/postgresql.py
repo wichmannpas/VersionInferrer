@@ -26,8 +26,12 @@ class PostgresqlBackend(GenericDatabaseBackend):
         """
         with closing(self._connection.cursor()) as cursor:
             cursor.execute('''
+            CREATE SEQUENCE IF NOT EXISTS scan_result_id_seq;
+            ''')
+            cursor.execute('''
             CREATE TABLE IF NOT EXISTS scan_result (
-                url TEXT PRIMARY KEY NOT NULL,
+                id INTEGER PRIMARY KEY DEFAULT NEXTVAL('scan_result_id_seq') NOT NULL,
+                url TEXT NOT NULL,
                 scan_identifier VARCHAR NOT NULL,
                 result JSONB
             )
@@ -36,6 +40,11 @@ class PostgresqlBackend(GenericDatabaseBackend):
             CREATE INDEX IF NOT EXISTS
                 scan_result_identifier
             ON scan_result(scan_identifier)
+            ''')
+            cursor.execute('''
+            CREATE INDEX IF NOT EXISTS
+                scan_result_url
+            ON scan_result(url)
             ''')
 
     def retrieve_scan_result(self, url: str, scan_identifier: str) -> Union[object, None]:
