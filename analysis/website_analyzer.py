@@ -30,6 +30,7 @@ class WebsiteAnalyzer:
     guess_limit = 7
     min_assets_per_iteration = 2
     max_assets_per_iteration = 8
+    debug_info = None
 
     def __init__(self, primary_url: str):
         self.primary_url = primary_url
@@ -37,6 +38,8 @@ class WebsiteAnalyzer:
 
     def analyze(self) -> Union[List[Guess], None]:
         """Analyze the website."""
+        self._init_debug_info()
+
         main_page = Resource(self.primary_url)
         if not main_page.success:
             logging.info('failed to retrieve main resource. Stopping')
@@ -58,6 +61,8 @@ class WebsiteAnalyzer:
         guesses = [Guess(estimate) for estimate in first_estimates] + \
             self._get_best_guesses(self.guess_limit)
         logging.info('assets from primary page and first estimates lead to guesses: %s', guesses)
+
+        self.debug_info['initial guesses'] = [str(guess) for guess in guesses]
 
         self._useless_iteration_count = 0
         for iteration in range(self.max_iterations):
@@ -181,12 +186,31 @@ class WebsiteAnalyzer:
         best_guess, support = self._calculate_support(guesses)
         return support >= MIN_SUPPORT and best_guess[0].strength >= MIN_ABSOLUTE_SUPPORT
 
+    def _init_debug_info(self):
+        self.debug_info = {
+            'parameters': {
+                'max iterations': self.max_iterations,
+                'guess limit': self.guess_limit,
+                'min assets per iteration': self.min_assets_per_iteration,
+                'max assets per iteration': self.max_assets_per_iteration,
+            },
+            'primary url': self.primary_url,
+            'initial guesses': [],
+            'iterations': [],
+        }
+
     def _iterate(
                 self, guesses: List[Tuple[SoftwareVersion, int]]
             ) -> List[Tuple[SoftwareVersion, int]]:
         """Do an iteration."""
         logging.info('starting iteration %s', self.iteration)
         useless = False
+
+        debug_info = {}
+        self.debug_info['iterations'].append(debug_info)
+
+        debug_info['iteration'] = self.iteration
+        debug_info['retrieved_assets'] = []
 
         # TODO: make sure that no assets are fetched multiple times
         assets_with_entropy = BACKEND.retrieve_webroot_paths_with_high_entropy(
@@ -201,6 +225,7 @@ class WebsiteAnalyzer:
             if iteration_matching_assets >= self.min_assets_per_iteration:
                 logging.info(
                     'Reached min iteration assets count. Stop iteration.')
+                debug_info['finish_reason'] = 'min count reached'
                 break
             url = join_url(self.primary_url, webroot_path)
             logging.info(
@@ -211,14 +236,27 @@ class WebsiteAnalyzer:
             if asset in self.retrieved_resources:
                 logging.info('asset already known, skipping')
                 continue
+            success = False
             if asset.success:
                 status_codes[asset.status_code] += 1
+                success = True
+            found_in_index = False
             if asset.using_versions:
                 iteration_matching_assets += 1
+                found_in_index = True
             self.retrieved_resources.add(asset)
+            debug_info['retrieved_assets'].append({
+                'url': url,
+                'webroot_path': webroot_path,
+                'using_versions': using_versions,
+                'different_checksums': different_cheksums,
+                'success': success,
+                'found in index': found_in_index,
+            })
         if 200 not in status_codes:
             logging.info('no asset could be retrieved in this iteration.')
             useless = True
+            debug_info['useless_reason'] = 'no asset successfully retrieved'
 
         previous_decisiveness = self._guess_decisiveness(guesses)
         guesses = self._get_best_guesses(self.guess_limit)
@@ -231,12 +269,19 @@ class WebsiteAnalyzer:
                 'decisiveness gain (%s) is less than minimum required',
                 gain)
             useless = True
+            debug_info['useless_reason'] = 'gain less than required'
+
+        debug_info['new guesses'] = [str(guess) for guess in guesses]
+        debug_info['new decisiveness'] = new_decisiveness
+        debug_info['gain'] = gain
 
         if useless:
             logging.info('iteration was useless.')
             self._useless_iteration_count += 1
         else:
             self._useless_iteration_count = 0
+
+        debug_info['useless'] = useless
 
         return guesses
 

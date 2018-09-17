@@ -30,6 +30,10 @@ def analyze(arguments: Namespace):
     if not arguments.json_only:
         print(analyzer.get_statistics())
 
+    if arguments.debug_json_file:
+        with open(arguments.debug_json_file, 'w') as debug_file:
+            json.dump(analyzer.debug_info, debug_file, cls=CustomJSONEncoder)
+
     json_file = sys.stdout
     if arguments.json_file:
         # TODO: make sure file is closed again
@@ -71,5 +75,10 @@ if __name__ == '__main__':
     parser.add_argument(
         '--json-file',
         help='Write JSON output to file instead of stdout.')
+
+    parser.add_argument(
+        '--debug-json-file',
+        '-d',
+        help='Write JSON debug output to this specified file')
 
     analyze(parser.parse_args())
