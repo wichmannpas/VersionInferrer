@@ -6,16 +6,14 @@ from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup, SoupStrainer
 
+import settings
 from analysis.asset import Asset
 from analysis.guess import Guess
 from analysis.resource import Resource
 from backends.software_version import SoftwareVersion
 from base.utils import join_url, most_recent_version
 from files import file_types_for_analysis
-from settings import BACKEND, GUESS_IGNORE_DISTANCE, \
-    GUESS_IGNORE_MIN_POSITIVE, GUESS_RELATIVE_IGNORE_DISTANCE, \
-    HTML_PARSER, HTML_RELEVANT_ELEMENTS, ITERATION_MIN_IMPROVEMENT, \
-    MAX_ITERATIONS_WITHOUT_IMPROVEMENT, MIN_ABSOLUTE_SUPPORT, MIN_SUPPORT, \
+from settings import BACKEND, HTML_PARSER, HTML_RELEVANT_ELEMENTS, \
     SUPPORTED_SCHEMES
 
 
@@ -26,10 +24,6 @@ class WebsiteAnalyzer:
     """
     # primary_url: str
     # retrieved_resources: Set[Resource]
-    max_iterations = 15
-    guess_limit = 7
-    min_assets_per_iteration = 2
-    max_assets_per_iteration = 8
     debug_info = None
 
     def __init__(self, primary_url: str):
@@ -59,20 +53,20 @@ class WebsiteAnalyzer:
         # First iteration uses all first estimates as well as best
         # guesses from main assets
         guesses = [Guess(estimate) for estimate in first_estimates] + \
-            self._get_best_guesses(self.guess_limit)
+            self._get_best_guesses(settings.GUESS_LIMIT)
         logging.info('assets from primary page and first estimates lead to guesses: %s', guesses)
 
         self.debug_info['initial guesses'] = [str(guess) for guess in guesses]
 
         self._useless_iteration_count = 0
-        for iteration in range(self.max_iterations):
+        for iteration in range(settings.MAX_ITERATIONS):
             if not guesses:
                 logging.error('no guesses left. Cannot continue.')
                 return None
 
             self.iteration = iteration
             guesses = self._iterate(guesses)
-            if self._useless_iteration_count >= MAX_ITERATIONS_WITHOUT_IMPROVEMENT:
+            if self._useless_iteration_count >= settings.MAX_ITERATIONS_WITHOUT_IMPROVEMENT:
                 logging.info(
                     'Reached max number of iterations without improvement (%s)',
                     self._useless_iteration_count)
@@ -171,9 +165,9 @@ class WebsiteAnalyzer:
 
         best_guess_strength = guesses[0].strength
         min_strength = min(
-            (1 - GUESS_RELATIVE_IGNORE_DISTANCE) * best_guess_strength,
-            best_guess_strength - GUESS_IGNORE_DISTANCE)
-        if guesses[0].positive_strength < GUESS_IGNORE_MIN_POSITIVE:
+            (1 - settings.GUESS_RELATIVE_IGNORE_DISTANCE) * best_guess_strength,
+            best_guess_strength - settings.GUESS_IGNORE_DISTANCE)
+        if guesses[0].positive_strength < settings.GUESS_IGNORE_MIN_POSITIVE:
             min_strength = float('-inf')
         return [
             guess
@@ -184,20 +178,20 @@ class WebsiteAnalyzer:
     def _has_enough_support(self, guesses: List[Guess]) -> bool:
         """Check whether the support of best_guess is high enough."""
         best_guess, support = self._calculate_support(guesses)
-        return support >= MIN_SUPPORT and best_guess[0].strength >= MIN_ABSOLUTE_SUPPORT
+        return support >= settings.MIN_SUPPORT and best_guess[0].strength >= settings.MIN_ABSOLUTE_SUPPORT
 
     def _init_debug_info(self):
         self.debug_info = {
-            'parameters': {
-                'max iterations': self.max_iterations,
-                'guess limit': self.guess_limit,
-                'min assets per iteration': self.min_assets_per_iteration,
-                'max assets per iteration': self.max_assets_per_iteration,
-            },
+            'parameters': {},
             'primary url': self.primary_url,
             'initial guesses': [],
             'iterations': [],
         }
+
+        for setting, typ in settings.OVERWRITABLE_SETTINGS:
+            self.debug_info['parameters'][
+                setting.lower().replace('_', ' ')
+            ] = getattr(settings, setting)
 
     def _iterate(
                 self, guesses: List[Tuple[SoftwareVersion, int]]
@@ -215,14 +209,14 @@ class WebsiteAnalyzer:
         # TODO: make sure that no assets are fetched multiple times
         assets_with_entropy = BACKEND.retrieve_webroot_paths_with_high_entropy(
             software_versions=(guess.software_version for guess in guesses),
-            limit=self.max_assets_per_iteration,
+            limit=settings.MAX_ASSETS_PER_ITERATION,
             exclude=(
                 asset.webroot_path
                 for asset in self.retrieved_assets))
         status_codes = defaultdict(int)
         iteration_matching_assets = 0
         for webroot_path, using_versions, different_cheksums in assets_with_entropy:
-            if iteration_matching_assets >= self.min_assets_per_iteration:
+            if iteration_matching_assets >= settings.MIN_ASSETS_PER_ITERATION:
                 logging.info(
                     'Reached min iteration assets count. Stop iteration.')
                 debug_info['finish_reason'] = 'min count reached'
@@ -259,12 +253,12 @@ class WebsiteAnalyzer:
             debug_info['useless_reason'] = 'no asset successfully retrieved'
 
         previous_decisiveness = self._guess_decisiveness(guesses)
-        guesses = self._get_best_guesses(self.guess_limit)
+        guesses = self._get_best_guesses(settings.GUESS_LIMIT)
         logging.info('new guesses are %s', guesses)
 
         new_decisiveness = self._guess_decisiveness(guesses)
         gain = new_decisiveness - previous_decisiveness
-        if gain < ITERATION_MIN_IMPROVEMENT:
+        if gain < settings.ITERATION_MIN_IMPROVEMENT:
             logging.info(
                 'decisiveness gain (%s) is less than minimum required',
                 gain)

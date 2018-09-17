@@ -6,6 +6,7 @@ from argparse import ArgumentParser, Namespace
 
 from analysis.website_analyzer import WebsiteAnalyzer
 from base.json import CustomJSONEncoder
+import settings
 
 
 def analyze(arguments: Namespace):
@@ -16,14 +17,10 @@ def analyze(arguments: Namespace):
     if arguments.json_only:
         logging.disable(logging.CRITICAL)
 
-    if arguments.max_iterations:
-        analyzer.max_iterations = arguments.max_iterations
-    if arguments.guess_limit:
-        analyzer.guess_limit = arguments.guess_limit
-    if arguments.min_assets_per_iteration:
-        analyzer.min_assets_per_iteration = arguments.min_assets_per_iteration,
-    if arguments.max_assets_per_iteration:
-        analyzer.max_assets_per_iteration = arguments.max_assets_per_iteration,
+    for setting, typ in settings.OVERWRITABLE_SETTINGS:
+        val = getattr(arguments, setting.lower(), None)
+        if val is not None:
+            setattr(settings, setting, val)
 
     result = analyzer.analyze()
 
@@ -64,10 +61,10 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('primary_url')
 
-    parser.add_argument('-i', '--max-iterations', type=int)
-    parser.add_argument('-l', '--guess-limit', type=int)
-    parser.add_argument('--min-assets-per-iteration', type=int)
-    parser.add_argument('--max-assets-per-iteration', type=int)
+    for setting, typ in settings.OVERWRITABLE_SETTINGS:
+        parser.add_argument('--{}'.format(
+            setting.lower().replace('_', '-')),
+            type=typ)
 
     parser.add_argument(
         '--json-only', action='store_true',
