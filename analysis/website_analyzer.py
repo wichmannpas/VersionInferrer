@@ -222,10 +222,8 @@ class WebsiteAnalyzer:
                 setting.lower().replace('_', ' ')
             ] = getattr(settings, setting)
 
-        self.debug_info['parameters'] = {
-            'complete retrieval': self.complete_retrieval,
-            'dry run': self.dry_run,
-        }
+        self.debug_info['parameters']['complete retrieval'] = self.complete_retrieval
+        self.debug_info['parameters']['dry run'] = self.dry_run
 
     def _iterate(
                 self, guesses: List[Tuple[SoftwareVersion, int]]
