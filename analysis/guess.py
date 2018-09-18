@@ -59,6 +59,16 @@ class Guess:
             'negative_matches': self.negative_matches,
         }
 
+    def debug_serialize(self) -> dict:
+        return {
+            'software_version': self.software_version.name,
+            'software_package': self.software_version.software_package.name,
+            'positive_matches': len(self.positive_matches),
+            'positive_strength': self.positive_strength,
+            'negative_matches': len(self.negative_matches),
+            'negative_strength': self.negative_strength,
+        }
+
     @property
     def negative_strength(self) -> float:
         """The negative strength of the guess."""

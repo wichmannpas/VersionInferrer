@@ -78,7 +78,7 @@ class WebsiteAnalyzer:
             self._get_best_guesses(settings.GUESS_LIMIT)
         logging.info('assets from primary page and first estimates lead to guesses: %s', guesses)
 
-        self.debug_info['initial guesses'] = [str(guess) for guess in guesses]
+        self.debug_info['initial guesses'] = [guess.debug_serialize() for guess in guesses]
 
         self._useless_iteration_count = 0
         for iteration in range(settings.MAX_ITERATIONS):
@@ -107,7 +107,7 @@ class WebsiteAnalyzer:
         enough_support = self._has_enough_support(best_guess)
 
         self.debug_info['result'] = {
-            'best guess': [str(guess) for guess in best_guess],
+            'best guess': [guess.debug_serialize() for guess in best_guess],
             'support': support,
             'enough support': enough_support,
         }
@@ -308,7 +308,7 @@ class WebsiteAnalyzer:
             useless = True
             debug_info['useless_reason'] = 'gain less than required'
 
-        debug_info['new guesses'] = [str(guess) for guess in guesses]
+        debug_info['new guesses'] = [guess.debug_serialize() for guess in guesses]
         debug_info['new decisiveness'] = new_decisiveness
         debug_info['gain'] = gain
 
