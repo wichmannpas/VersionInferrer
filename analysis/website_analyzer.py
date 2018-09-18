@@ -78,7 +78,7 @@ class WebsiteAnalyzer:
             self._get_best_guesses(settings.GUESS_LIMIT)
         logging.info('assets from primary page and first estimates lead to guesses: %s', guesses)
 
-        self.debug_info['initial guesses'] = [guess.debug_serialize() for guess in guesses]
+        self.debug_info['initial_guesses'] = [guess.debug_serialize() for guess in guesses]
 
         self._useless_iteration_count = 0
         for iteration in range(settings.MAX_ITERATIONS):
@@ -107,9 +107,9 @@ class WebsiteAnalyzer:
         enough_support = self._has_enough_support(best_guess)
 
         self.debug_info['result'] = {
-            'best guess': [guess.debug_serialize() for guess in best_guess],
+            'best_guess': [guess.debug_serialize() for guess in best_guess],
             'support': support,
-            'enough support': enough_support,
+            'enough_support': enough_support,
         }
 
         if not enough_support:
@@ -212,18 +212,16 @@ class WebsiteAnalyzer:
     def _init_debug_info(self):
         self.debug_info = {
             'parameters': {},
-            'primary url': self.primary_url,
-            'initial guesses': [],
+            'primary_url': self.primary_url,
+            'initial_guesses': [],
             'iterations': [],
         }
 
         for setting, typ in settings.OVERWRITABLE_SETTINGS:
-            self.debug_info['parameters'][
-                setting.lower().replace('_', ' ')
-            ] = getattr(settings, setting)
+            self.debug_info['parameters'][setting.lower()] = getattr(settings, setting)
 
-        self.debug_info['parameters']['complete retrieval'] = self.complete_retrieval
-        self.debug_info['parameters']['dry run'] = self.dry_run
+        self.debug_info['parameters']['complete_retrieval'] = self.complete_retrieval
+        self.debug_info['parameters']['dry_run'] = self.dry_run
 
     def _iterate(
                 self, guesses: List[Tuple[SoftwareVersion, int]]
@@ -283,10 +281,10 @@ class WebsiteAnalyzer:
                     found_in_index = True
                 self.retrieved_resources.add(asset)
                 asset_debug_info['success'] = success
-                asset_debug_info['found in index'] = found_in_index
+                asset_debug_info['found_in_index'] = found_in_index
             debug_info['retrieved_assets'].append(asset_debug_info)
 
-        debug_info['asset count'] = len(debug_info['retrieved_assets'])
+        debug_info['asset_count'] = len(debug_info['retrieved_assets'])
 
         if 200 not in status_codes:
             logging.info('no asset could be retrieved in this iteration.')
@@ -306,8 +304,8 @@ class WebsiteAnalyzer:
             useless = True
             debug_info['useless_reason'] = 'gain less than required'
 
-        debug_info['new guesses'] = [guess.debug_serialize() for guess in guesses]
-        debug_info['new decisiveness'] = new_decisiveness
+        debug_info['new_guesses'] = [guess.debug_serialize() for guess in guesses]
+        debug_info['new_decisiveness'] = new_decisiveness
         debug_info['gain'] = gain
 
         if useless:
