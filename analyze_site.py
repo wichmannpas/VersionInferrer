@@ -3,9 +3,11 @@ import json
 import logging
 import sys
 from argparse import ArgumentParser, Namespace
+from fnmatch import fnmatch
 
 from analysis.website_analyzer import WebsiteAnalyzer
 from base.json import CustomJSONEncoder
+from definitions import definitions
 import settings
 
 
@@ -22,7 +24,17 @@ def analyze(arguments: Namespace):
         if val is not None:
             setattr(settings, setting, val)
 
-    result = analyzer.analyze()
+    if arguments.complete_index_retrieval_for:
+        packages = [
+            definition.software_package
+            for definition in definitions
+            if fnmatch(
+                definition.software_package.name.lower(),
+                arguments.complete_index_retrieval_for.lower())
+        ]
+        result = analyzer.perform_complete_index_retrieval_for(packages, arguments.dry_run)
+    else:
+        result = analyzer.analyze()
 
     if not arguments.json_only:
         print(analyzer.get_statistics())
@@ -67,6 +79,13 @@ if __name__ == '__main__':
             type=typ)
 
     parser.add_argument(
+        '--complete-index-retrieval-for', '-c',
+        help='Retrieve all assets from the index for software packages that match this pattern')
+    parser.add_argument(
+        '--dry-run', '-n', action='store_true', default=False,
+        help='Only determine which assets to retrieve')
+
+    parser.add_argument(
         '--json-only', action='store_true',
         help='Only output json data to stdout.')
     parser.add_argument(
@@ -78,4 +97,9 @@ if __name__ == '__main__':
         '-d',
         help='Write JSON debug output to this specified file')
 
-    analyze(parser.parse_args())
+    arguments = parser.parse_args()
+
+    if arguments.dry_run and not arguments.complete_index_retrieval_for:
+        raise ValueError('dry run is only valid for complete index retrieval!')
+
+    analyze(arguments)

@@ -10,6 +10,7 @@ import settings
 from analysis.asset import Asset
 from analysis.guess import Guess
 from analysis.resource import Resource
+from backends.software_package import SoftwarePackage
 from backends.software_version import SoftwareVersion
 from base.utils import join_url, most_recent_version
 from files import file_types_for_analysis
@@ -27,8 +28,29 @@ class WebsiteAnalyzer:
     debug_info = None
 
     def __init__(self, primary_url: str):
+        self.complete_retrieval = False
+        self.dry_run = False
         self.primary_url = primary_url
         self.retrieved_resources = set()
+
+    def perform_complete_index_retrieval_for(
+            self, packages: List[SoftwarePackage],
+            dry_run=False):
+        self.software_packages = packages
+        self.dry_run = dry_run
+        self.complete_retrieval = True
+
+        self._init_debug_info()
+
+        estimates = set()
+
+        for package in packages:
+            estimates |= BACKEND.retrieve_versions(package)
+
+        guesses = [Guess(estimate) for estimate in estimates]
+        self.iteration = 0
+        self._useless_iteration_count = 0
+        self._iterate(guesses)
 
     def analyze(self) -> Union[List[Guess], None]:
         """Analyze the website."""
@@ -82,8 +104,15 @@ class WebsiteAnalyzer:
 
         best_guess, support = self._calculate_support(guesses)
         logging.info('Best guess is %s (support %s)', best_guess, support)
+        enough_support = self._has_enough_support(best_guess)
 
-        if not self._has_enough_support(best_guess):
+        self.debug_info['result'] = {
+            'best guess': [str(guess) for guess in best_guess],
+            'support': support,
+            'enough support': enough_support,
+        }
+
+        if not enough_support:
             logging.warning('Support is too low. No usable result available.')
             return None
 
@@ -193,6 +222,11 @@ class WebsiteAnalyzer:
                 setting.lower().replace('_', ' ')
             ] = getattr(settings, setting)
 
+        self.debug_info['parameters'] = {
+            'complete retrieval': self.complete_retrieval,
+            'dry run': self.dry_run,
+        }
+
     def _iterate(
                 self, guesses: List[Tuple[SoftwareVersion, int]]
             ) -> List[Tuple[SoftwareVersion, int]]:
@@ -207,16 +241,20 @@ class WebsiteAnalyzer:
         debug_info['retrieved_assets'] = []
 
         # TODO: make sure that no assets are fetched multiple times
+        limit = settings.MAX_ASSETS_PER_ITERATION
+        if self.complete_retrieval:
+            limit = None
         assets_with_entropy = BACKEND.retrieve_webroot_paths_with_high_entropy(
             software_versions=(guess.software_version for guess in guesses),
-            limit=settings.MAX_ASSETS_PER_ITERATION,
+            limit=limit,
             exclude=(
                 asset.webroot_path
                 for asset in self.retrieved_assets))
         status_codes = defaultdict(int)
         iteration_matching_assets = 0
         for webroot_path, using_versions, different_cheksums in assets_with_entropy:
-            if iteration_matching_assets >= settings.MIN_ASSETS_PER_ITERATION:
+            if not self.complete_retrieval and \
+                    iteration_matching_assets >= settings.MIN_ASSETS_PER_ITERATION:
                 logging.info(
                     'Reached min iteration assets count. Stop iteration.')
                 debug_info['finish_reason'] = 'min count reached'
@@ -226,27 +264,32 @@ class WebsiteAnalyzer:
                 'Regarding path %s used by %s versions with '
                 '%s different revisions', webroot_path, using_versions,
                 different_cheksums)
-            asset = Asset(url)
-            if asset in self.retrieved_resources:
-                logging.info('asset already known, skipping')
-                continue
-            success = False
-            if asset.success:
-                status_codes[asset.status_code] += 1
-                success = True
-            found_in_index = False
-            if asset.using_versions:
-                iteration_matching_assets += 1
-                found_in_index = True
-            self.retrieved_resources.add(asset)
-            debug_info['retrieved_assets'].append({
+            asset_debug_info = {
                 'url': url,
                 'webroot_path': webroot_path,
                 'using_versions': using_versions,
                 'different_checksums': different_cheksums,
-                'success': success,
-                'found in index': found_in_index,
-            })
+            }
+            if not self.dry_run:
+                asset = Asset(url)
+                if asset in self.retrieved_resources:
+                    logging.info('asset already known, skipping')
+                    continue
+                success = False
+                if asset.success:
+                    status_codes[asset.status_code] += 1
+                    success = True
+                found_in_index = False
+                if asset.using_versions:
+                    iteration_matching_assets += 1
+                    found_in_index = True
+                self.retrieved_resources.add(asset)
+                asset_debug_info['success'] = success
+                asset_debug_info['found in index'] = found_in_index
+            debug_info['retrieved_assets'].append(asset_debug_info)
+
+        debug_info['asset count'] = len(debug_info['retrieved_assets'])
+
         if 200 not in status_codes:
             logging.info('no asset could be retrieved in this iteration.')
             useless = True

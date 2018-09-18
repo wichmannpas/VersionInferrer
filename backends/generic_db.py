@@ -1,7 +1,7 @@
 from abc import abstractmethod, abstractstaticmethod
 from contextlib import closing
 from math import log
-from typing import Iterable, List, Set, Tuple, Union
+from typing import Iterable, List, Optional, Set, Tuple, Union
 
 from backends.backend import Backend, BackendException
 from backends.model import Model
@@ -346,7 +346,7 @@ class GenericDatabaseBackend(Backend):
 
     def retrieve_webroot_paths_with_high_entropy(
             self, software_versions: Iterable[SoftwareVersion],
-            limit: int, exclude: Iterable[str] = '') -> List[Tuple[str, int, int]]:
+            limit: Optional[int], exclude: Iterable[str] = '') -> List[Tuple[str, int, int]]:
         """
         Retrieve a list of webroot paths which have a high entropy
         among the specified software versions.
@@ -406,8 +406,11 @@ class GenericDatabaseBackend(Backend):
             query += '''
             ORDER BY
                 (subquery.version_count + subquery.checksum_count) DESC
-            LIMIT ''' + str(int(limit)) + '''
             '''
+
+            if limit:
+                query += 'LIMIT ' + str(int(limit))
+
             cursor.execute(query, tuple(params))
 
             return cursor.fetchall()
