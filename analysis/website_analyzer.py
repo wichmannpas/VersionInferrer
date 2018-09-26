@@ -1,7 +1,8 @@
 import logging
+import pickle
 import os
 from collections import defaultdict
-from typing import Dict, FrozenSet, Iterable, List, Tuple, Union
+from typing import Dict, FrozenSet, Iterable, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup, SoupStrainer
@@ -25,13 +26,22 @@ class WebsiteAnalyzer:
     """
     # primary_url: str
     # retrieved_resources: Set[Resource]
+    # _cache: dict
+    _cache_file = None
     debug_info = None
 
-    def __init__(self, primary_url: str):
+    def __init__(self, primary_url: str, cache_file: Optional[str] = None):
         self.complete_retrieval = False
         self.dry_run = False
         self.primary_url = primary_url
         self.retrieved_resources = set()
+        self._cache = {}
+        if cache_file:
+            self._load_cache(cache_file)
+
+    def __del__(self):
+        if self._cache_file:
+            self._persist_cache()
 
     def perform_complete_index_retrieval_for(
             self, packages: List[SoftwarePackage],
@@ -56,7 +66,7 @@ class WebsiteAnalyzer:
         """Analyze the website."""
         self._init_debug_info()
 
-        main_page = Resource(self.primary_url)
+        main_page = Resource(self.primary_url, self._cache)
         if not main_page.success:
             logging.info('failed to retrieve main resource. Stopping')
             return None
@@ -70,7 +80,7 @@ class WebsiteAnalyzer:
         self._retrieve_included_assets(main_page)
         # regard favicon
         self.retrieved_resources.add(Asset(
-            join_url(self.primary_url, 'favicon.ico')))
+            join_url(self.primary_url, 'favicon.ico'), self._cache))
 
         # First iteration uses all first estimates as well as best
         # guesses from main assets
@@ -267,7 +277,7 @@ class WebsiteAnalyzer:
                 'different_checksums': different_cheksums,
             }
             if not self.dry_run:
-                asset = Asset(url)
+                asset = Asset(url, self._cache)
                 if asset in self.retrieved_resources:
                     logging.info('asset already known, skipping')
                     continue
@@ -318,6 +328,14 @@ class WebsiteAnalyzer:
 
         return guesses
 
+    def _load_cache(self, cache_file: str):
+        self._cache_file = cache_file
+        if not os.path.isfile(self._cache_file):
+            return
+        with open(cache_file, 'rb') as ca:
+            self._cache = pickle.load(ca)
+            assert isinstance(self._cache, dict), 'invalid cache file'
+
     def _map_retrieved_assets_to_versions(
             self) -> Dict[SoftwareVersion, Tuple[int, int]]:
         """
@@ -344,6 +362,10 @@ class WebsiteAnalyzer:
             asset
             for asset in self.retrieved_resources
             if isinstance(asset, Asset) and asset.using_versions)
+
+    def _persist_cache(self):
+        with open(self._cache_file, 'wb') as ca:
+            pickle.dump(self._cache, ca)
 
     def _retrieve_included_assets(self, resource: Resource):
         """Retrieve the assets referenced from resource."""
@@ -385,7 +407,7 @@ class WebsiteAnalyzer:
                 # url is relative.
                 # TODO: relative to webroot?
                 referenced_url = join_url(resource.url, referenced_url)
-            asset = Asset(referenced_url)
+            asset = Asset(referenced_url, self._cache)
             self.retrieved_resources.add(asset)
 
     @staticmethod

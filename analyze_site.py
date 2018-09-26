@@ -14,7 +14,8 @@ import settings
 def analyze(arguments: Namespace):
     """Analyse a site to infer its used software package(s) and versions."""
     analyzer = WebsiteAnalyzer(
-        primary_url=arguments.primary_url)
+        primary_url=arguments.primary_url,
+        cache_file=arguments.cache_file)
 
     if arguments.json_only:
         logging.disable(logging.CRITICAL)
@@ -91,6 +92,11 @@ if __name__ == '__main__':
     parser.add_argument(
         '--json-file',
         help='Write JSON output to file instead of stdout.')
+
+    parser.add_argument(
+        '--cache-file',
+        '-s',
+        help='Use specified file as a cache to store retrieved assets.')
 
     parser.add_argument(
         '--debug-json-file',

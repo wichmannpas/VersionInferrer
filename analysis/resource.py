@@ -1,5 +1,5 @@
 import logging
-from typing import Set, Union
+from typing import Optional, Set, Union
 from urllib.parse import urlparse
 from urllib3.exceptions import HTTPError
 
@@ -23,8 +23,9 @@ class Resource:
     """
     # url: str
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, cache: Optional[dict] = None):
         self.url = url
+        self.cache = cache
 
     def __eq__(self, other) -> bool:
         return self.url == other.url
@@ -73,6 +74,12 @@ class Resource:
 
     def retrieve(self):
         """Retrieve the resource from its url."""
+        if self.cache is not None and self.url in self.cache:
+            logging.info('Using cached version of resource %s', self.url)
+            self._success = True
+            self._response = self.cache[self.url]
+            return
+
         logging.info('Retrieving resource %s', self.url)
 
         try:
@@ -80,6 +87,7 @@ class Resource:
         except (HTTPError, RequestException):
             self._success = False
         else:
+            self.cache[self.url] = self._response
             self._success = True
 
         if not self._success or self._response.status_code != 200:
