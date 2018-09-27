@@ -25,9 +25,6 @@ class GenericArchiveProvider(Provider):
         self._archive_cache_directory = os.path.join(
             self.cache_directory, '.archives-cache')
 
-    def checkout_version(self, version: SoftwareVersion):
-        """Check out specified version into directory."""
-
     def get_versions(self) -> Set[SoftwareVersion]:
         """Retrieve all available versions and return them as a set."""
         return set(self.mapping().keys()) + \

@@ -23,31 +23,16 @@ class Provider(metaclass=ABCMeta):
         self.version_name_derivator = version_name_derivator
 
     @abstractmethod
-    def checkout_version(self, version: SoftwareVersion):
-        """Check out specified version into directory."""
-
-    @abstractmethod
     def get_versions(self) -> Set[SoftwareVersion]:
         """Retrieve all available versions and return them as a set."""
 
-    def _call_command(self, command: List[str]) -> int:
-        """
-        Run a command within the cache directory and return its return code.
-        """
-        cwd = None
-        if os.path.isdir(self.cache_directory):
-            cwd = self.cache_directory
-        return call(command, cwd=cwd)
+    @abstractmethod
+    def list_files(self, version: SoftwareVersion):
+        """List all files available within version."""
 
-    def _check_command(self, command: List[str]) -> str:
-        """
-        Run a command within the cache directory and return its output as str.
-        """
-        cwd = None
-        if os.path.isdir(self.cache_directory):
-            cwd = self.cache_directory
-        return check_output(
-            command, cwd=cwd).decode()[:-1]
+    @abstractmethod
+    def get_file_data(self, version: SoftwareVersion, path: str):
+        """Get stream of file data at path as contained within version.."""
 
     def _get_software_version(
             self, internal_identifier: str,

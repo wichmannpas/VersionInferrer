@@ -11,6 +11,7 @@ from base.utils import join_paths
 from definitions.definition import SoftwareDefinition
 from definitions import definitions
 from files import file_types_for_index
+from providers.provider import Provider
 from settings import BACKEND
 
 
@@ -31,7 +32,7 @@ class Indexer:
             self, definition: SoftwareDefinition,
             indexed_versions: Set[SoftwareVersion]) -> bool:
         """
-        Garbace collect a specific definition, deleting versions
+        Garbage collect a specific definition, deleting versions
         not available through provider.
         Returns whether at least one version was deleted.
         """
@@ -109,13 +110,13 @@ class Indexer:
             len(missing_versions),
             str(definition.software_package))
         for version in missing_versions:
-
             static_files = self.index_version(definition, version)
             logging.info('indexing %d static files', len(static_files))
             changed = True
             self._store_to_backend(static_files)
 
             self._mark_version_indexed(version)
+            logging.info('indexed %d static files', len(static_files))
 
         return changed
 
@@ -123,15 +124,16 @@ class Indexer:
             self, definition: SoftwareDefinition,
             version: SoftwareVersion) -> List[StaticFile]:
         """Index a missing version."""
-        definition.provider.checkout_version(version)
+        file_paths = definition.provider.list_files(version)
 
         # Generate list of static files
         static_files = []
         for webroot_path, src_path in definition.path_map.items():
             static_files.extend(
                 self.iterate_static_file_paths(
+                    definition.provider,
                     version,
-                    definition.provider.cache_directory,
+                    file_paths,
                     webroot_path,
                     src_path))
         return [
@@ -143,28 +145,31 @@ class Indexer:
 
 
     def iterate_static_file_paths(
-            self, software_version: SoftwareVersion, base_dir: str,
-            webroot_path: str, src_path: str) -> Iterable[str]:
+            self, provider: Provider, version: SoftwareVersion,
+            file_paths: list, webroot_path: str, src_path: str
+    ) -> Iterable[str]:
         """
-        Get the paths of all static files within base_dir using
-        src_path and webroot_path mapping.
+        Add all static files underneath src_path and resolve their
+        webroot path.
         """
-        for directory, file_name in (
-                (directory, file_name)
-                for directory, dir_names, file_names in os.walk(join_paths(
-                        base_dir, src_path))
-                for file_name in file_names):
-            full_path = os.path.join(base_dir, directory, file_name)
-            if not os.path.isfile(full_path) or os.path.islink(full_path):
-                # do not index non-regular files
+        if src_path.startswith('/'):
+            # remove leading slash
+            src_path = src_path[1:]
+        if webroot_path.startswith('/'):
+            # remove leading slash
+            webroot_path = webroot_path[1:]
+
+        for full_path in file_paths:
+            if not full_path.startswith(src_path):
+                # file path is not relevant
                 continue
-            with open(full_path, 'rb') as fdes:
-                raw_content = fdes.read()
+            raw_content = provider.get_file_data(version, full_path)
+            path = full_path.replace(src_path, '', 1)
 
             file = None
             for file_type in file_types_for_index:
                 try:
-                    file = file_type(file_name, raw_content)
+                    file = file_type(os.path.basename(path), raw_content)
                 except ValueError:
                     continue
             if file is None:
@@ -172,27 +177,24 @@ class Indexer:
                 continue
 
             yield StaticFile(
-                software_version=software_version,
-                src_path=join_paths(
-                    directory.replace(base_dir, '', 1),
-                    file_name),
+                software_version=version,
+                src_path=full_path,
                 webroot_path=join_paths(
                     webroot_path,
-                    directory.replace(join_paths(base_dir, src_path), '', 1),
-                    file_name),
+                    path),
                 checksum=file.checksum)
 
     def _delete_from_backend(self, obj: Model):
         """Store an object to the database."""
         # TODO: re-implement fallback for backends not capable of multi-threading
-        #       (i.e., using mark_indexed as hoook or similar)
+        #       (i.e., using mark_indexed as hook or similar)
 
         BACKEND.delete(obj)
 
     def _store_to_backend(self, obj: Union[Model, List[Model]]):
         """Store an object to the database."""
         # TODO: re-implement fallback for backends not capable of multi-threading
-        #       (i.e., using mark_indexed as hoook or similar)
+        #       (i.e., using mark_indexed as hook or similar)
 
         BACKEND.store(obj)
 

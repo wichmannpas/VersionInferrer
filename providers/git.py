@@ -1,8 +1,12 @@
 import os
+import re
 
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from subprocess import CalledProcessError
 from typing import Callable, List, Pattern, Set, Union
+
+from pygit2 import clone_repository, Commit, GIT_FETCH_PRUNE, Index, Tag
+from pygit2.repository import Repository
 
 from providers.provider import Provider
 from backends.software_package import SoftwarePackage
@@ -26,41 +30,43 @@ class GenericGitProvider(Provider):
     def __repr__(self) -> str:
         return "<{} '{}'>".format(str(self.__class__.__name__), str(self))
 
-    def _call_command(self, *args, **kwargs):
-        lockfile_path = os.path.join(self.cache_directory, '.git/index.lock')
-        if os.path.isfile(lockfile_path):
-            os.remove(lockfile_path)
-        return super()._call_command(*args, **kwargs)
+    def list_files(self, version: SoftwareVersion):
+        """List all files available within version."""
+        commit = self._get_commit(version)
+        index = Index()
+        index.read_tree(commit.tree)
+        return [
+            entry.path
+            for entry in index
+        ]
+
+    def get_file_data(self, version: SoftwareVersion, path: str):
+        """Get data of file at path as contained within version.."""
+        commit = self._get_commit(version)
+        file_blob = self.repository.revparse_single('{}:{}'.format(
+            commit.hex,
+            path))
+        return file_blob.data
+
+    @property
+    def repository(self):
+        if hasattr(self, '_repository'):
+            return self._repository
+
+        return Repository(self.cache_directory)
 
     def _check_cache_directory(self) -> bool:
         """Check whether a valid clone of the provided Git repository."""
         if not os.path.isdir(self.cache_directory):
             return False
         try:
-            # origin is the default remote; called 'origin' if cloned by us
-            remote_url = self._check_command(
-                ['git', 'config', 'remote.origin.url'])
-        except CalledProcessError:
+            remote_url = self.repository.remotes['origin'].url
+        except (CalledProcessError, ValueError):
             return False
         return remote_url == self.url
 
-    def _checkout(self, git_object: str):
-        """Do a git checkout of specified git object."""
-        self._refresh_repository()
-
-        # clean all local changes
-        code = self._call_command(['git', 'clean', '-xd', '--force', '--quiet'])
-
-        # force-reset to destination commit (unstaging staged changes)
-        code = self._call_command(['git', 'reset', '--hard', git_object])
-        if code != 0:
-            raise GitException('checkout failed')
-
-    def _get_object_datetime(self, git_object: str) -> datetime:
-        """Retrieve the age of an object."""
-        raw_datetime = self._check_command(
-            ['git', 'log', '-1', '--format=%ai', git_object])
-        return datetime.strptime(raw_datetime, '%Y-%m-%d %H:%M:%S %z')
+    def _get_commit(self, version: SoftwareVersion) -> Commit:
+        return self.commit[version.internal_identifier]
 
     def _init_repository(self):
         if self._check_cache_directory():
@@ -72,17 +78,15 @@ class GenericGitProvider(Provider):
         os.makedirs(
             os.path.dirname(self.cache_directory),
             exist_ok=True)
-        code = self._call_command(
-            ['git', 'clone', self.url, self.cache_directory])
-        if code != 0:
-            raise GitException('init failed')
+        self._repository = clone_repository(self.url, self.cache_directory, bare=True)
 
     def _refresh_repository(self):
         if not self._check_cache_directory():
             self._init_repository()
-        code = self._call_command(['git', 'fetch', 'origin', '--prune', '--tags', '--force'])
-        if code != 0:
-            raise GitException('refresh failed')
+        remote = self.repository.remotes['origin']
+        assert remote.refspec_count
+        assert remote.get_refspec(0).force
+        remote.fetch(prune=GIT_FETCH_PRUNE)
 
 
 class GitCommitProvider(GenericGitProvider):
@@ -91,6 +95,8 @@ class GitCommitProvider(GenericGitProvider):
 
 class GitTagProvider(GenericGitProvider):
     """A Git provider using tags for versions."""
+    TAG_PATTERN = re.compile(r'^refs/tags/(.*)$')
+
     def __init__(
             self, software_package: SoftwarePackage, url: str,
             version_name_derivator: Union[Callable[[str], str], None] = None,
@@ -100,15 +106,17 @@ class GitTagProvider(GenericGitProvider):
         self.version_pattern = version_pattern
         self.exclude_pattern = exclude_pattern
 
-    def checkout_version(self, version: SoftwareVersion):
-        """Check out specified version."""
-        self._checkout(version.internal_identifier)
-
     def get_versions(self) -> Set[SoftwareVersion]:
         """Retrieve all versions from git tags."""
         self._refresh_repository()
 
-        tags = self._check_command(['git', 'tag']).split('\n')
+        tags = [
+            matched_ref.group(1)
+            for matched_ref in (
+                self.TAG_PATTERN.match(ref)
+                for ref in self.repository.listall_references())
+            if matched_ref
+        ]
         # Excluded versions are None and removed after set comprehension
         result = {
             self._get_software_version(tag)
@@ -117,24 +125,37 @@ class GitTagProvider(GenericGitProvider):
             result.remove(None)
         return result
 
+    def _get_commit(self, version: SoftwareVersion) -> Commit:
+        return self._get_commit_from_tag_name(version.internal_identifier)
+
+    def _get_commit_from_tag_name(self, tag_name: str) -> Commit:
+        rev = self.repository.revparse_single(tag_name)
+
+        if isinstance(rev, Tag):
+            # this is a tag object
+            return rev.get_object()
+
+        return rev
+
     def _get_software_version(
             self, tag: str) -> Union[SoftwareVersion, None]:
-        """Get a SoftwareVersion object from a git tag name."""
+        """Derive a SoftwareVersion object from a git tag name."""
         internal_identifier = tag
-        name = internal_identifier
         if self.version_pattern:
-            match = self.version_pattern.match(tag)
+            match = self.version_pattern.match(internal_identifier)
             if not match:
                 return
             name = match.groupdict().get('version_name', internal_identifier)
         if self.exclude_pattern:
-            if self.exclude_pattern.match(tag):
+            if self.exclude_pattern.match(internal_identifier):
                 return
 
-        release_date = self._get_object_datetime(tag)
+        commit = self._get_commit_from_tag_name(internal_identifier)
+        tzinfo  = timezone(timedelta(minutes=commit.author.offset))
+        release_date = datetime.fromtimestamp(float(commit.author.time), tzinfo)
 
         # Apply additional name derivation functions from superclasses
-        name = super()._get_software_version(name, release_date).name
+        name = super()._get_software_version(internal_identifier, release_date).name
 
         return SoftwareVersion(
             software_package=self.software_package,
