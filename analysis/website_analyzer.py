@@ -114,7 +114,7 @@ class WebsiteAnalyzer:
 
         best_guess, support = self._calculate_support(guesses)
         logging.info('Best guess is %s (support %s)', best_guess, support)
-        enough_support = self._has_enough_support(best_guess)
+        enough_support = self._has_enough_support(guesses)
 
         self.debug_info['result'] = {
             'best_guess': [guess.debug_serialize() for guess in best_guess],
