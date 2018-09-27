@@ -11,6 +11,12 @@ class Backend(metaclass=ABCMeta):
     """A base class for database backends."""
 
     @abstractmethod
+    def clear_result_cache(self):
+        """
+        Clear the result cache.
+        """
+
+    @abstractmethod
     def delete(self, element: Model) -> bool:
         """Delete an instance of a Model subclass."""
 

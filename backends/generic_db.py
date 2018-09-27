@@ -52,6 +52,12 @@ class GenericDatabaseBackend(Backend):
     def __del__(self):
         self._connection.close()
 
+    def clear_result_cache(self):
+        """
+        Clear the result cache.
+        """
+        self._result_cache = {}
+
     def delete(self, element: Model) -> bool:
         """Delete an instance of a Model subclass."""
         if isinstance(element, SoftwareVersion):
