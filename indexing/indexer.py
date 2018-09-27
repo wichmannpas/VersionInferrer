@@ -61,31 +61,26 @@ class Indexer:
     def index_all(self, max_workers: int = 16,
             limit_definitions: Union[None, List[str]] = None):
         """Index for all definitions."""
-        while True:
-            changed = False
-            with ProcessPoolExecutor(max_workers=max_workers) as executor:
-                futures = set()
-                tasks = []
-                for definition in definitions:
-                    if limit_definitions is not None and definition not in limit_definitions:
-                        # this definition is to be skipped
-                        continue
-                    # Ensure that software package is in the database
-                    self._store_to_backend(definition.software_package)
-                    indexed_versions = BACKEND.retrieve_versions(
-                        definition.software_package)
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            futures = set()
+            tasks = []
+            for definition in definitions:
+                if limit_definitions is not None and definition not in limit_definitions:
+                    # this definition is to be skipped
+                    continue
+                # Ensure that software package is in the database
+                self._store_to_backend(definition.software_package)
+                indexed_versions = BACKEND.retrieve_versions(
+                    definition.software_package)
 
-                    worker = deepcopy(self)
-                    tasks.append((worker.index_definition, definition, indexed_versions))
-                for task in tasks:
-                    futures.add(
-                        executor.submit(*task))
-                for future in futures:
-                    this_changed = future.result()
-                    if this_changed:
-                        changed = True
-            if not changed:
-                break
+                worker = deepcopy(self)
+                tasks.append((worker.index_definition, definition, indexed_versions))
+            for task in tasks:
+                futures.add(
+                    executor.submit(*task))
+            for future in futures:
+                # await all the futures
+                future.result()
 
     def index_definition(
             self, definition: SoftwareDefinition,
