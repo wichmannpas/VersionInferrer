@@ -1,5 +1,5 @@
 import os
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from typing import Iterable, Set
 
 import msgpack
@@ -26,11 +26,16 @@ def join_url(*args) -> str:
     Join a base url and paths.
     """
     base_url = args[0]
+    base_path = urlparse(base_url).path[1:]
+    base_url = base_url.replace(base_path, '', 1)
     if base_url.endswith('/'):
         base_url = base_url[:-1]
     path = ''
     if len(args) >= 2:
-        path = join_paths(*args[1:])
+        join_args = args[1:]
+        if base_path:
+            join_args = (base_path,) + join_args
+        path = join_paths(*join_args)
 
     return url_normalize(urljoin(base_url, path))
 
