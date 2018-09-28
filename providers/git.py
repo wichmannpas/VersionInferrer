@@ -66,7 +66,7 @@ class GenericGitProvider(Provider):
         return remote_url == self.url
 
     def _get_commit(self, version: SoftwareVersion) -> Commit:
-        return self.commit[version.internal_identifier]
+        return self.repository[version.internal_identifier]
 
     def _init_repository(self):
         if self._check_cache_directory():
