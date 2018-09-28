@@ -38,6 +38,7 @@ class GenericGitProvider(Provider):
         return [
             entry.path
             for entry in index
+            if entry.oid in self.repository
         ]
 
     def get_file_data(self, version: SoftwareVersion, path: str):
