@@ -68,6 +68,8 @@ OVERWRITABLE_SETTINGS = (
 if 'unittest' not in sys.modules:
     try:
         from settings_local import *
-    except ImportError:
+    except ImportError as e:
+        if e.name != 'settings_local':
+            raise
+
         # local settings are optional
-        pass
