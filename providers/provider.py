@@ -2,7 +2,6 @@ import os
 
 from abc import abstractmethod, ABCMeta
 from datetime import datetime
-from subprocess import call, check_output
 from typing import Callable, List, Set, Union
 
 from backends.software_package import SoftwarePackage

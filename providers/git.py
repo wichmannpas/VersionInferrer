@@ -2,7 +2,7 @@ import os
 import re
 
 from datetime import datetime, timezone, timedelta
-from subprocess import CalledProcessError
+from subprocess import call
 from typing import Callable, List, Pattern, Set, Union
 
 from pygit2 import clone_repository, Commit, GIT_FETCH_PRUNE, Index, Tag
@@ -62,7 +62,7 @@ class GenericGitProvider(Provider):
             return False
         try:
             remote_url = self.repository.remotes['origin'].url
-        except (CalledProcessError, ValueError):
+        except ValueError:
             return False
         return remote_url == self.url
 
@@ -88,6 +88,10 @@ class GenericGitProvider(Provider):
         assert remote.refspec_count
         assert remote.get_refspec(0).force
         remote.fetch(prune=GIT_FETCH_PRUNE)
+
+        # use git command to ensure all tags are fetched (as this does not work with
+        # some pygit2 versions at least)
+        call(['git', 'fetch', 'origin', '--prune', '--tags', '--force'], cwd=self.cache_directory)
 
 
 class GitCommitProvider(GenericGitProvider):
