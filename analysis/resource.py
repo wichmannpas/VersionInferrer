@@ -1,4 +1,6 @@
 import logging
+import os
+from string import ascii_letters, digits
 from typing import Optional, Set, Union
 from urllib.parse import urlparse
 from urllib3.exceptions import HTTPError
@@ -61,6 +63,27 @@ class Resource:
         result |= self._extract_wappalyzer_information()
 
         return result
+
+    def persist(self, base_path: str):
+        """
+        Persist this reource underneath base_path.
+        """
+        VALID_NAME_CHARS = ascii_letters + digits + '-_.()=[]{}\\'
+
+        parsed_url = urlparse(self.url)
+        path = os.path.join(
+            base_path,
+            '_'.join((parsed_url.scheme, parsed_url.netloc)),
+            ''.join(
+                ch for ch in parsed_url.path[1:].replace('/', '_')
+                if ch in VALID_NAME_CHARS) or '__index__')
+
+        os.makedirs(
+            os.path.dirname(path),
+            exist_ok=True)
+
+        with open(path, 'wb') as fdes:
+            fdes.write(self.content)
 
     @property
     def final_url(self) -> str:

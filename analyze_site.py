@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import logging
+import os
 import sys
 from argparse import ArgumentParser, Namespace
 from fnmatch import fnmatch
@@ -16,6 +17,12 @@ def analyze(arguments: Namespace):
     analyzer = WebsiteAnalyzer(
         primary_url=arguments.primary_url,
         cache_file=arguments.cache_file)
+
+    if arguments.persist_resources:
+        assert os.path.isdir(arguments.persist_resources) or \
+            not os.path.exists(arguments.persist_resources), 'invalid persist path'
+
+        analyzer.persist_resources = arguments.persist_resources
 
     if arguments.json_only:
         logging.disable(logging.CRITICAL)
@@ -97,6 +104,11 @@ if __name__ == '__main__':
         '--cache-file',
         '-s',
         help='Use specified file as a cache to store retrieved assets.')
+
+    parser.add_argument(
+        '--persist-resources',
+        '-p',
+        help='Persist retrieved resources within the specified path for debugging purposes.')
 
     parser.add_argument(
         '--debug-json-file',

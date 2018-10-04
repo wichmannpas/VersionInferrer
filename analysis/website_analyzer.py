@@ -29,6 +29,7 @@ class WebsiteAnalyzer:
     # _cache: dict
     _cache_file = None
     debug_info = None
+    persist_resources = None
 
     def __init__(self, primary_url: str, cache_file: Optional[str] = None):
         self.complete_retrieval = False
@@ -42,6 +43,8 @@ class WebsiteAnalyzer:
     def __del__(self):
         if self._cache_file:
             self._persist_cache()
+        if self.persist_resources:
+            self._persist_resources()
 
     def perform_complete_index_retrieval_for(
             self, packages: List[SoftwarePackage],
@@ -366,6 +369,11 @@ class WebsiteAnalyzer:
     def _persist_cache(self):
         with open(self._cache_file, 'wb') as ca:
             pickle.dump(self._cache, ca)
+
+    def _persist_resources(self):
+        os.makedirs(self.persist_resources, exist_ok=True)
+        for resource in self.retrieved_resources:
+            resource.persist(self.persist_resources)
 
     def _retrieve_included_assets(self, resource: Resource):
         """Retrieve the assets referenced from resource."""
