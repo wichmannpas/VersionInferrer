@@ -34,10 +34,9 @@ class Provider(metaclass=ABCMeta):
         """Get stream of file data at path as contained within version.."""
 
     def _get_software_version(
-            self, internal_identifier: str,
+            self, internal_identifier: str, name: str,
             release_date: datetime) -> Union[SoftwareVersion, None]:
         """Get a SoftwareVersion object from an internal identifier."""
-        name = internal_identifier
         if self.version_name_derivator is not None:
             name = self.version_name_derivator(internal_identifier)
         return SoftwareVersion(

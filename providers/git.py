@@ -160,7 +160,7 @@ class GitTagProvider(GenericGitProvider):
         release_date = datetime.fromtimestamp(float(commit.author.time), tzinfo)
 
         # Apply additional name derivation functions from superclasses
-        name = super()._get_software_version(internal_identifier, release_date).name
+        name = super()._get_software_version(internal_identifier, name, release_date).name
 
         return SoftwareVersion(
             software_package=self.software_package,
