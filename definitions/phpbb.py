@@ -12,9 +12,9 @@ class PhpBB(SoftwareDefinition):
     provider = GitTagProvider(
         software_package=software_package,
         url='https://github.com/phpbb/phpbb.git',
-        version_pattern=re.compile(r'^release-(?P<version_name>.*)')
+        version_pattern=re.compile(r'^release-(?P<version_name>\d+(\.\d+)?(\.\d+)?)$')
     )
     path_map = {
-        '/': '/',
+        '/': '/phpBB',
     }
     ignore_paths = None
