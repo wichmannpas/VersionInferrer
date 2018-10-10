@@ -1,3 +1,5 @@
+import re
+
 from backends.software_package import SoftwarePackage
 from definitions.definition import SoftwareDefinition
 from providers.git import GitTagProvider
@@ -9,7 +11,8 @@ class Magento(SoftwareDefinition):
         vendor='Magento Inc.')
     provider = GitTagProvider(
         software_package=software_package,
-        url='https://github.com/magento/magento2.git'
+        url='https://github.com/magento/magento2.git',
+        version_pattern=re.compile(r'^\d+\.\d+\.\d+$'),
     )
     path_map = {
         '/': '/',
