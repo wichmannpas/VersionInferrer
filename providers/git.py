@@ -146,6 +146,7 @@ class GitTagProvider(GenericGitProvider):
             self, tag: str) -> Union[SoftwareVersion, None]:
         """Derive a SoftwareVersion object from a git tag name."""
         internal_identifier = tag
+        name = internal_identifier
         if self.version_pattern:
             match = self.version_pattern.match(internal_identifier)
             if not match:
