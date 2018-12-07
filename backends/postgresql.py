@@ -34,7 +34,7 @@ class PostgresqlBackend(GenericDatabaseBackend):
             cursor.execute('''
             CREATE TABLE IF NOT EXISTS scan_result_{identifier} (
                 id INTEGER PRIMARY KEY DEFAULT NEXTVAL('scan_result_{identifier}_id_seq') NOT NULL,
-                url TEXT NOT NULL,
+                url TEXT NOT NULL UNIQUE,
                 result JSONB
             )
             '''.format(identifier= scan_identifier))
