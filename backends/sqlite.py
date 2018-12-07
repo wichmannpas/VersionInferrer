@@ -42,7 +42,7 @@ class SqliteBackend(GenericDatabaseBackend):
                 name TEXT NOT NULL,
                 internal_identifier TEXT NOT NULL,
                 release_date TIMESTAMP,
-                indexed BOOLEAN DEFAULT 0,
+                indexed TIMESTAMP,
                 FOREIGN KEY(software_package_id) REFERENCES software_package(id),
                 UNIQUE(software_package_id, internal_identifier)
             )

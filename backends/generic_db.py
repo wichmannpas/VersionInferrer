@@ -1,5 +1,6 @@
 from abc import abstractmethod, abstractstaticmethod
 from contextlib import closing
+from datetime import datetime
 from math import log
 from typing import Iterable, List, Optional, Set, Tuple, Union
 
@@ -90,7 +91,7 @@ class GenericDatabaseBackend(Backend):
                 indexed=''' + self._operator + '''
             WHERE
                 id=''' + self._operator + '''
-            ''', (indexed, software_version_id,))
+            ''', (datetime.now(), software_version_id,))
 
     def reopen_connection(self):
         """Open a new connection to the backend store."""
@@ -339,7 +340,7 @@ class GenericDatabaseBackend(Backend):
                 software_package_id=''' + self._operator + '''
             '''
             if indexed_only:
-                query += 'AND indexed=' + self._true_value
+                query += 'AND indexed IS NOT NULL'
             cursor.execute(query, (software_package_id,))
 
             return {

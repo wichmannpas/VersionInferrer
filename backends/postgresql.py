@@ -260,7 +260,7 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 name TEXT NOT NULL,
                 internal_identifier TEXT NOT NULL,
                 release_date TIMESTAMP NOT NULL,
-                indexed BOOLEAN DEFAULT 'f',
+                indexed TIMESTAMP,
                 FOREIGN KEY(software_package_id) REFERENCES software_package(id) ON DELETE CASCADE,
                 UNIQUE(software_package_id, internal_identifier)
             )
