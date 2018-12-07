@@ -36,7 +36,7 @@ class Scanner:
         futures = []
         assert isinstance(
             BACKEND, PostgresqlBackend), 'postgresql backend required for scanning'
-        BACKEND.initialize_scan_results()
+        BACKEND.initialize_scan_results(self.scan_identifier)
         with ProcessPoolExecutor(max_workers=self.concurrent) as executor:
             index = start
             for site in sites:

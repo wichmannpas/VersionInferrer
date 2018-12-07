@@ -1,5 +1,6 @@
 import json
 from contextlib import closing
+from string import ascii_letters, digits
 from typing import Iterable, List, Tuple, Union
 
 import psycopg2
@@ -18,49 +19,46 @@ class PostgresqlBackend(GenericDatabaseBackend):
     _operator = '%s'
     _true_value = 'true'
 
-    def initialize_scan_results(self):
+    def initialize_scan_results(self, scan_identifier: str):
         """
         Prepare the backend to store scan results.
 
         This only supports postgresql.
         """
+        self._assert_valid_scan_identifier(scan_identifier)
+
         with closing(self._connection.cursor()) as cursor:
             cursor.execute('''
-            CREATE SEQUENCE IF NOT EXISTS scan_result_id_seq;
-            ''')
+            CREATE SEQUENCE IF NOT EXISTS scan_result_{}_id_seq;
+            '''.format(scan_identifier))
             cursor.execute('''
-            CREATE TABLE IF NOT EXISTS scan_result (
-                id INTEGER PRIMARY KEY DEFAULT NEXTVAL('scan_result_id_seq') NOT NULL,
+            CREATE TABLE IF NOT EXISTS scan_result_{identifier} (
+                id INTEGER PRIMARY KEY DEFAULT NEXTVAL('scan_result_{identifier}_id_seq') NOT NULL,
                 url TEXT NOT NULL,
-                scan_identifier VARCHAR NOT NULL,
                 result JSONB
             )
-            ''')
+            '''.format(identifier= scan_identifier))
             cursor.execute('''
             CREATE INDEX IF NOT EXISTS
-                scan_result_identifier
-            ON scan_result(scan_identifier)
-            ''')
-            cursor.execute('''
-            CREATE INDEX IF NOT EXISTS
-                scan_result_url
-            ON scan_result(url)
-            ''')
+                scan_result_{identifier}_url
+            ON scan_result_{identifier}(url)
+            '''.format(identifier=scan_identifier))
 
     def retrieve_scan_result(self, url: str, scan_identifier: str) -> Union[object, None]:
         """
         Retrieve a scan result from the backend.
         """
+        self._assert_valid_scan_identifier(scan_identifier)
+
         with closing(self._connection.cursor()) as cursor:
             cursor.execute('''
             SELECT
                 r.result
             FROM
-                scan_result r
+                scan_result_{} r
             WHERE
-                r.url = %s AND
-                r.scan_identifier = %s
-            ''', (url, scan_identifier))
+                r.url = %s
+            '''.format(scan_identifier), (url,))
             result = cursor.fetchone()
             if result:
                 return result[0]
@@ -69,52 +67,53 @@ class PostgresqlBackend(GenericDatabaseBackend):
         """
         Bulk retrieve scan results from the backend.
         """
+        self._assert_valid_scan_identifier(scan_identifier)
+
         with closing(self._connection.cursor()) as cursor:
             cursor.execute('''
             SELECT
                 r.url,
                 r.result
             FROM
-                scan_result r
+                scan_result_{} r
             WHERE
-                r.url IN %s AND
-                r.scan_identifier = %s
-            ''', (tuple(urls), scan_identifier))
+                r.url IN %s
+            '''.format(scan_identifier), (tuple(urls),))
             return cursor.fetchall()
 
     def retrieve_scanned_sites(self, scan_identifier: str) -> List[str]:
         """
         Retrieve a list of the site URLs that have an existing scan result.
         """
+        self._assert_valid_scan_identifier(scan_identifier)
+
         with closing(self._connection.cursor()) as cursor:
             cursor.execute('''
             SELECT
                 r.url
             FROM
-                scan_result r
-            WHERE
-                r.scan_identifier = %s
-            ''', (scan_identifier, ))
+                scan_result_{} r
+            '''.format(scan_identifier))
             return [r[0] for r in cursor.fetchall()]
 
     def store_scan_result(self, url: str, result: object, scan_identifier: str):
         """
         Store a scan result to the backend.
         """
+        self._assert_valid_scan_identifier(scan_identifier)
+
         with closing(self._connection.cursor()) as cursor:
             cursor.execute('''
             INSERT
-            INTO scan_result (
+            INTO scan_result_{} (
                 url,
-                scan_identifier,
                 result
             )
             VALUES (
                 %s,
-                %s,
                 %s
             )
-            ''', (url, scan_identifier, json.dumps(result, cls=CustomJSONEncoder)))
+            '''.format(scan_identifier), (url, json.dumps(result, cls=CustomJSONEncoder)))
 
     def store(self, element: Union[Model, List[Model]]) -> bool:
         """
@@ -406,3 +405,9 @@ class PostgresqlBackend(GenericDatabaseBackend):
     def _unpack_list(raw: object) -> list:
         # postgres has native list support
         return raw
+
+    @staticmethod
+    def _assert_valid_scan_identifier(identifier: str):
+        assert all(
+            c in ascii_letters + digits + '_' for c in identifier
+        ), 'invalid identifier'

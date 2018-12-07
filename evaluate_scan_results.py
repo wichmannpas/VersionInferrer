@@ -42,12 +42,11 @@ def result_count(arguments: Namespace) -> int:
     SELECT
         COUNT(*)
     FROM
-        scan_result r
+        scan_result_{} r
     WHERE
-        r.result->>'result' != 'false' AND
-        r.scan_identifier = %s
+        r.result->>'result' != 'false'
     '''
-    return _raw_query(query, (arguments.identifier,))[0][0]
+    return _raw_query(query.format(arguments.identifier))[0][0]
 
 
 def guess_counts(arguments: Namespace) -> Dict[int, int]:
@@ -62,25 +61,22 @@ def guess_counts(arguments: Namespace) -> Dict[int, int]:
         0 guesses,
         COUNT(*)
     FROM
-        scan_result r
+        scan_result_{identifier} r
     WHERE
-        r.result->>'result' = 'false' AND
-        r.scan_identifier = %(scan_identifier)s
+        r.result->>'result' = 'false'
     UNION SELECT
         JSONB_ARRAY_LENGTH(r.result->'result') guesses,
         COUNT(*)
     FROM
-        scan_result r
+        scan_result_{identifier} r
     WHERE
-        r.result->>'result' != 'false' AND
-        r.scan_identifier = %(scan_identifier)s
+        r.result->>'result' != 'false'
     GROUP BY guesses
-    '''
+    '''.format(identifier=arguments.identifier)
     return {
         guesses: count
         for guesses, count in _raw_query(
-            query,
-            {'scan_identifier': arguments.identifier}
+            query
         )
     }
 
@@ -98,19 +94,18 @@ def package_counts(arguments: Namespace) -> Dict[int, int]:
             r.url,
             JSONB_ARRAY_ELEMENTS(r.result->'result')->'software_version'->'software_package'->>'name' software_package
         FROM
-            scan_result r
+            scan_result_{identifier} r
         WHERE
-            r.result->>'result' != 'false' AND
-            r.scan_identifier = %s
+            r.result->>'result' != 'false'
         GROUP BY
             url,
             software_package) sub
     GROUP BY
         sub.software_package
-    '''
+    '''.format(identifier=arguments.identifier)
     return {
         software_package: count
-        for software_package, count in _raw_query(query, (arguments.identifier, ))
+        for software_package, count in _raw_query(query)
     }
 
 
@@ -123,10 +118,9 @@ def distinct_packages_count(arguments: Namespace) -> Dict[int, int]:
         0 package_count,
         COUNT(*)
     FROM
-        scan_result r
+        scan_result_{identifier} r
     WHERE
-        r.result->>'result' = 'false' AND
-        r.scan_identifier = %(scan_identifier)s
+        r.result->>'result' = 'false'
     UNION SELECT
         sub2.package_count,
         COUNT(*)
@@ -139,10 +133,9 @@ def distinct_packages_count(arguments: Namespace) -> Dict[int, int]:
                 r.url,
                 jsonb_array_elements(r.result->'result')->'software_version'->'software_package'->>'name' software_package
             FROM
-                scan_result r
+                scan_result_{identifier} r
             WHERE
-                r.result->>'result' != 'false' AND
-                r.scan_identifier = %(scan_identifier)s
+                r.result->>'result' != 'false'
             GROUP BY
                 url,
                 software_package) sub
@@ -150,12 +143,11 @@ def distinct_packages_count(arguments: Namespace) -> Dict[int, int]:
              sub.url) sub2
     GROUP BY
         sub2.package_count
-    '''
+    '''.format(identifier=arguments.identifier)
     return {
         package_count: count
         for package_count, count in _raw_query(
-            query,
-            {'scan_identifier': arguments.identifier}
+            query
         )
     }
 
