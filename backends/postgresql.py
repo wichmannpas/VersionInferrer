@@ -1,5 +1,6 @@
 import json
 from contextlib import closing
+from datetime import datetime
 from string import ascii_letters, digits
 from typing import Iterable, List, Tuple, Union
 
@@ -35,6 +36,7 @@ class PostgresqlBackend(GenericDatabaseBackend):
             CREATE TABLE IF NOT EXISTS scan_result_{identifier} (
                 id INTEGER PRIMARY KEY DEFAULT NEXTVAL('scan_result_{identifier}_id_seq') NOT NULL,
                 url TEXT NOT NULL UNIQUE,
+                scan_time TIMESTAMP NOT NULL,
                 result JSONB
             )
             '''.format(identifier= scan_identifier))
@@ -107,13 +109,15 @@ class PostgresqlBackend(GenericDatabaseBackend):
             INSERT
             INTO scan_result_{} (
                 url,
+                scan_time,
                 result
             )
             VALUES (
                 %s,
+                %s,
                 %s
             )
-            '''.format(scan_identifier), (url, json.dumps(result, cls=CustomJSONEncoder)))
+            '''.format(scan_identifier), (url, datetime.now(), json.dumps(result, cls=CustomJSONEncoder)))
 
     def store(self, element: Union[Model, List[Model]]) -> bool:
         """
