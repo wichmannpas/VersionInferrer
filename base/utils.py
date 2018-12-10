@@ -1,4 +1,5 @@
 import os
+from string import ascii_letters, digits
 from urllib.parse import urljoin, urlparse
 from typing import Iterable, Set
 
@@ -86,3 +87,10 @@ def most_recent_version(versions: Iterable[SoftwareVersion]) -> SoftwareVersion:
     iterable of versions.
     """
     return max(versions, key=lambda v: v.release_date)
+
+
+def clean_path_name(name: str) -> str:
+    VALID_NAME_CHARS = ascii_letters + digits + '-_.()=[]{}\\'
+    return ''.join(
+        ch for ch in name.replace('/', '_')
+        if ch in VALID_NAME_CHARS)

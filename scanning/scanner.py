@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from analysis.website_analyzer import WebsiteAnalyzer
 from backends.postgresql import PostgresqlBackend
 from base.output import colors, print_info
+from base.utils import clean_path_name
 from scanning import majestic_million
 from settings import BACKEND
 
@@ -20,6 +21,7 @@ class Scanner:
     """
     concurrent = 80
     # scan_identifier: str
+    persist_resources = None
 
     def __init__(self, scan_identifier: str):
         self.scan_identifier = scan_identifier
@@ -69,6 +71,13 @@ class Scanner:
             url)
         analyzer = WebsiteAnalyzer(
             primary_url=url)
+
+        if self.persist_resources:
+            analyzer.persist_resources = os.path.join(
+                self.persist_resources,
+                self.scan_identifier,
+                clean_path_name(url))
+
         result = analyzer.analyze()
         if not result:
             result = False
