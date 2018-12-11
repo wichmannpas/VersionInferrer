@@ -12,6 +12,8 @@ from requests.exceptions import RequestException
 
 from analysis.wappalyzer_apps import wappalyzer_apps
 from backends.software_version import SoftwareVersion
+from base.checksum import calculate_checksum
+from base.utils import clean_path_name
 from settings import BACKEND, HTML_PARSER, HTTP_TIMEOUT
 
 
@@ -75,12 +77,20 @@ class Resource:
             return
 
         parsed_url = urlparse(self.url)
+        path_name = clean_path_name(parsed_url.path[1:]) or '__index__'
+
+        if len(path_name) > 200:
+            path_name = '...'.join((
+                path_name[:50],
+                calculate_checksum(path_name.encode()).hex(),
+                path_name[-50:]))
+
         path = os.path.join(
             base_path,
             '_'.join((parsed_url.scheme, parsed_url.netloc)),
-            ''.join(
-                ch for ch in parsed_url.path[1:].replace('/', '_')
-                if ch in VALID_NAME_CHARS) or '__index__')
+            path_name)
+
+        logging.info('persisting resource %s at %s' % (self.url, path))
 
         os.makedirs(
             os.path.dirname(path),
