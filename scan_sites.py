@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
+import logging
 import os
 from argparse import ArgumentParser, Namespace
 
+from base.utils import clean_path_name
 from scanning.scanner import Scanner
 
 
@@ -10,6 +12,13 @@ def scan(arguments: Namespace):
     scanner = Scanner(arguments.identifier)
     if arguments.concurrent:
         scanner.concurrent = arguments.concurrent
+
+    if arguments.log_dir:
+        os.makedirs(arguments.log_dir, exist_ok=True)
+        logging.basicConfig(
+            filename=os.path.join(arguments.log_dir, clean_path_name(arguments.identifier)),
+            format='%(asctime)-15s: %(message)s',
+            level=logging.INFO)
 
     if arguments.persist_resources:
         # must not exist or be an existing *directory*
@@ -37,4 +46,8 @@ if __name__ == '__main__':
         '--persist-resources',
         '-p',
         help='Persist retrieved resources within the specified path for debugging purposes.')
+    parser.add_argument(
+        '--log-dir',
+        '-l',
+        help='Write log file with identifier as name within directory.')
     scan(parser.parse_args())
