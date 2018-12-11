@@ -66,9 +66,13 @@ class Resource:
 
     def persist(self, base_path: str):
         """
-        Persist this reource underneath base_path.
+        Persist this resource underneath base_path.
         """
         VALID_NAME_CHARS = ascii_letters + digits + '-_.()=[]{}\\'
+
+        if not self.retrieved or not self.success:
+            logging.info('not storing not (successfully) retrieved resource %s' % self.url)
+            return
 
         parsed_url = urlparse(self.url)
         path = os.path.join(
