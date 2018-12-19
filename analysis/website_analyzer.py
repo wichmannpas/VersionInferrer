@@ -395,7 +395,11 @@ class WebsiteAnalyzer:
                 referenced_urls.add(src)
 
         for referenced_url in referenced_urls:
-            parsed_url = urlparse(referenced_url)
+            try:
+                parsed_url = urlparse(referenced_url)
+            except ValueError:
+                # invalid URL
+                continue
             if (parsed_url.scheme and
                     parsed_url.scheme not in SUPPORTED_SCHEMES):
                 continue
