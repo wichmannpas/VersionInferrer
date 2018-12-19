@@ -19,7 +19,9 @@ Install the required Python packages via:
 
 Optional: If you want to use PostgreSQL, you need to install `psycopg2`:
 
-    pip install psycopg2
+    pip install psycopg2-binary
+
+or `pip install psycopg2` if you want to build the binary yourself (requires a C toolchain).
 
 
 ## Configuration
