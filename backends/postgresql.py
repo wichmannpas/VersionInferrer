@@ -3,7 +3,9 @@ from contextlib import closing
 from datetime import datetime
 from string import ascii_letters, digits
 from typing import Iterable, List, Tuple, Union
+import warnings
 
+warnings.filterwarnings("ignore", category=UserWarning, module='psycopg2')
 import psycopg2
 
 from backends.backend import Backend, BackendException
