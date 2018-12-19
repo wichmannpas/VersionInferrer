@@ -121,7 +121,7 @@ class Resource:
 
         try:
             self._response = requests.get(self.url, timeout=HTTP_TIMEOUT)
-        except (HTTPError, RequestException):
+        except (HTTPError, RequestException, UnicodeError):
             self._success = False
         else:
             self.cache[self.url] = self._response
