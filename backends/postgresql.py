@@ -5,7 +5,7 @@ from string import ascii_letters, digits
 from typing import Iterable, List, Tuple, Union
 import warnings
 
-warnings.filterwarnings("ignore", category=UserWarning, module='psycopg2')
+warnings.filterwarnings('ignore', 'The psycopg2 wheel package will be renamed from release 2.8', UserWarning, 'psycopg2')
 import psycopg2
 
 from backends.backend import Backend, BackendException
