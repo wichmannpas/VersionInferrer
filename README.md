@@ -21,7 +21,7 @@ Optional: If you want to use PostgreSQL, you need to install `psycopg2`:
 
     pip install psycopg2-binary
 
-or `pip install psycopg2` if you want to build the binary yourself (requires a C toolchain).
+or `pip install --no-binary :all: psycopg2` (see [official documentation](http://initd.org/psycopg/docs/install.html#disabling-wheel-packages-for-psycopg-2-7)) if you want to build the binary yourself (requires a C toolchain).
 
 
 ## Configuration
