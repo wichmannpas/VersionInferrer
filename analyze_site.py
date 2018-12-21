@@ -71,10 +71,11 @@ def analyze(arguments: Namespace):
             'More recent version {} released, possibly outdated!'.format(
                 more_recent))
 
-    json.dump({
-        'result': result,
-        'more_recent': more_recent,
-    }, json_file, cls=CustomJSONEncoder)
+    if arguments.json or arguments.json_only or json_file != sys.stdout:
+        json.dump({
+            'result': result,
+            'more_recent': more_recent,
+        }, json_file, cls=CustomJSONEncoder)
 
 
 if __name__ == '__main__':
@@ -94,11 +95,14 @@ if __name__ == '__main__':
         help='Only determine which assets to retrieve')
 
     parser.add_argument(
+        '--json', action='store_true',
+        help='Write JSON output to stdout.')
+    parser.add_argument(
         '--json-only', action='store_true',
-        help='Only output json data to stdout.')
+        help='Only output JSON data to stdout.')
     parser.add_argument(
         '--json-file',
-        help='Write JSON output to file instead of stdout.')
+        help='Write JSON output to specified file.')
 
     parser.add_argument(
         '--cache-file',
