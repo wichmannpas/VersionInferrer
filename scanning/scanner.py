@@ -34,7 +34,7 @@ class Scanner:
         sites = majestic_million.get_sites(start, end)
         if urls:
             # use provided urls instead of majestic domains
-            sites = urls
+            sites = urls[skip:skip + count]
         futures = []
         assert isinstance(
             BACKEND, PostgresqlBackend), 'postgresql backend required for scanning'
