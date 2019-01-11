@@ -2,6 +2,7 @@ import logging
 import os
 import pickle
 from concurrent.futures import ProcessPoolExecutor
+from hashlib import sha1
 from traceback import format_exc, print_exc
 from typing import List, Union
 from urllib.parse import urlparse
@@ -73,10 +74,14 @@ class Scanner:
             primary_url=url)
 
         if self.persist_resources:
+            cleaned_url = clean_path_name(url)
+            hashed_url = sha1(cleaned_url.encode()).hexdigest()
+
             analyzer.persist_resources = os.path.join(
                 self.persist_resources,
                 self.scan_identifier,
-                clean_path_name(url))
+                hashed_url[:2],
+                hashed_url[2:4])
 
         result = analyzer.analyze()
         if not result:
