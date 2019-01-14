@@ -81,7 +81,8 @@ class Scanner:
                 self.persist_resources,
                 self.scan_identifier,
                 hashed_url[:2],
-                hashed_url[2:4])
+                hashed_url[2:4],
+                cleaned_url)
 
         result = analyzer.analyze()
         if not result:
