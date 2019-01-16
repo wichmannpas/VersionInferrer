@@ -32,8 +32,9 @@ class Scanner:
         # majestic million is 1-indexed
         start = skip + 1
         end = count + skip + 1
-        sites = majestic_million.get_sites(start, end)
-        if urls:
+        if urls is None:
+            sites = majestic_million.get_sites(start, end)
+        else:
             # use provided urls instead of majestic domains
             sites = urls[skip:skip + count]
         futures = []
