@@ -34,11 +34,15 @@ class WebsiteAnalyzer:
     def __init__(self, primary_url: str, cache_file: Optional[str] = None):
         self.complete_retrieval = False
         self.dry_run = False
-        self.primary_url = primary_url
         self.retrieved_resources = set()
         self._cache = {}
         if cache_file:
             self._load_cache(cache_file)
+        if not primary_url.startswith(('http://', 'https://')):
+            logging.warning('No scheme was given for the primary URL. Falling back to \'http://\' as scheme.')
+            self.primary_url = 'http://{}'.format(primary_url)
+        else:
+            self.primary_url = primary_url
 
     def __del__(self):
         if self._cache_file:
