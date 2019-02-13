@@ -322,38 +322,55 @@ class GenericDatabaseBackend(Backend):
 
     @use_result_cache
     def retrieve_versions(
-            self, software_package: SoftwarePackage,
+            self, software_package: Optional[SoftwarePackage] = None,
             indexed_only: bool = True) -> Set[SoftwareVersion]:
-        """Retrieve all available versions for specified software package. """
-        software_package_id = self._get_id(software_package)
-        if software_package_id is None:
-            raise BackendException('software package not stored')
+        """
+        Retrieve all available versions for specified software package.
+        If no package is specified, all software versions for all packages are returned.
+        """
+        software_package_id = None
+
+        if software_package:
+            software_package_id = self._get_id(software_package)
+            if software_package_id is None:
+                raise BackendException('software package not stored')
 
         with closing(self._connection.cursor()) as cursor:
+            params = []
+
             query = '''
             SELECT
-                name,
-                internal_identifier,
-                release_date
-            FROM software_version
+                p.name,
+                p.vendor,
+                p.alternative_names,
+                v.name,
+                v.internal_identifier,
+                v.release_date
+            FROM
+                software_package p,
+                software_version v
             WHERE
-                software_package_id=''' + self._operator + '''
+                v.software_package_id = p.id
             '''
-            if indexed_only:
-                query += 'AND indexed IS NOT NULL'
-            cursor.execute(query, (software_package_id,))
 
-            return {
-                SoftwareVersion(
-                    software_package,
-                    name=name,
-                    internal_identifier=internal_identifier,
-                    release_date=release_date)
-                for name, internal_identifier, release_date in cursor.fetchall()}
+            if software_package_id:
+                query += '''
+                AND
+                    software_package_id=''' + self._operator
+                params.append(software_package_id)
+
+            if indexed_only:
+                query += '''
+                AND indexed IS NOT NULL'''
+
+            cursor.execute(query, params)
+
+            return self._get_software_versions_from_raw(cursor.fetchall())
 
     def retrieve_webroot_paths_with_high_entropy(
             self, software_versions: Iterable[SoftwareVersion],
-            limit: Optional[int], exclude: Iterable[str] = '') -> List[Tuple[str, int, int]]:
+            limit: Optional[int], exclude: Iterable[str] = '') -> List[
+        Tuple[str, int, int]]:
         """
         Retrieve a list of webroot paths which have a high entropy
         among the specified software versions.

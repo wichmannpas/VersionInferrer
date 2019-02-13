@@ -82,7 +82,7 @@ class WebsiteAnalyzer:
             logging.info('updating primary url to %s', main_page.final_url)
             self.primary_url = main_page.final_url
 
-        first_estimates = main_page.extract_information()
+        first_estimates = set(BACKEND.retrieve_versions())
 
         self._retrieve_included_assets(main_page)
         # regard favicon
