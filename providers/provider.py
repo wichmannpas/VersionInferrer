@@ -1,8 +1,6 @@
-import os
-
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta, abstractmethod
 from datetime import datetime
-from typing import Callable, List, Set, Union
+from typing import Callable, Set, Union
 
 from backends.software_package import SoftwarePackage
 from backends.software_version import SoftwareVersion
@@ -11,7 +9,7 @@ from backends.software_version import SoftwareVersion
 class Provider(metaclass=ABCMeta):
     """
     The abstract base class for any provider.
-    
+
     A provider exposes functionality to retrieve code and versions.
     """
     def __init__(

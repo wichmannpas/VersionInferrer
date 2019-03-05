@@ -1,16 +1,15 @@
 import os
 import re
-
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from subprocess import call
-from typing import Callable, List, Pattern, Set, Union
+from typing import Callable, Pattern, Set, Union
 
-from pygit2 import clone_repository, Commit, GIT_FETCH_PRUNE, Index, Tag
+from pygit2 import Commit, GIT_FETCH_PRUNE, Index, Tag, clone_repository
 from pygit2.repository import Repository
 
-from providers.provider import Provider
 from backends.software_package import SoftwarePackage
 from backends.software_version import SoftwareVersion
+from providers.provider import Provider
 
 
 class GenericGitProvider(Provider):

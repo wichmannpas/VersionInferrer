@@ -8,8 +8,8 @@ from backends.model import Model
 from backends.software_version import SoftwareVersion
 from backends.static_file import StaticFile
 from base.utils import join_paths
-from definitions.definition import SoftwareDefinition
 from definitions import definitions
+from definitions.definition import SoftwareDefinition
 from files import file_types_for_index
 from providers.provider import Provider
 from settings import BACKEND
@@ -21,7 +21,7 @@ class Indexer:
     """
 
     def gc_all(self):
-        """Garbace collect all definitions."""
+        """Garbage collect all definitions."""
         logging.info('Garbage collecting all definitions.')
         for definition in definitions:
             indexed_versions = BACKEND.retrieve_versions(
@@ -36,8 +36,6 @@ class Indexer:
         not available through provider.
         Returns whether at least one version was deleted.
         """
-        changed = False
-
         logging.info(
             'handling gc for software package %s', definition.software_package)
 
@@ -138,11 +136,11 @@ class Indexer:
                 not definition.ignore_paths.match(static_file.src_path))
         ]
 
-
+    @staticmethod
     def iterate_static_file_paths(
-            self, provider: Provider, version: SoftwareVersion,
+            provider: Provider, version: SoftwareVersion,
             file_paths: list, webroot_path: str, src_path: str
-    ) -> Iterable[str]:
+    ) -> Iterable[StaticFile]:
         """
         Add all static files underneath src_path and resolve their
         webroot path.
@@ -179,21 +177,24 @@ class Indexer:
                     path),
                 checksum=file.checksum)
 
-    def _delete_from_backend(self, obj: Model):
+    @staticmethod
+    def _delete_from_backend(obj: Model):
         """Store an object to the database."""
         # TODO: re-implement fallback for backends not capable of multi-threading
         #       (i.e., using mark_indexed as hook or similar)
 
         BACKEND.delete(obj)
 
-    def _store_to_backend(self, obj: Union[Model, List[Model]]):
+    @staticmethod
+    def _store_to_backend(obj: Union[Model, List[Model]]):
         """Store an object to the database."""
         # TODO: re-implement fallback for backends not capable of multi-threading
         #       (i.e., using mark_indexed as hook or similar)
 
         BACKEND.store(obj)
 
-    def _mark_version_indexed(self, version: SoftwareVersion):
+    @staticmethod
+    def _mark_version_indexed(version: SoftwareVersion):
         """Store an object to the database."""
         # TODO: re-implement fallback for backends not capable of multi-threading
 

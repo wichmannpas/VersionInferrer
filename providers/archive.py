@@ -27,8 +27,7 @@ class GenericArchiveProvider(Provider):
 
     def get_versions(self) -> Set[SoftwareVersion]:
         """Retrieve all available versions and return them as a set."""
-        return set(self.mapping().keys()) + \
-            self._get_cached_version_identifiers()
+        return set(self.mapping().keys()) | self._get_cached_version_identifiers()
 
     def _get_cached_version_identifiers(self) -> Set[str]:
         if not os.path.isdir(self._archive_cache_directory):

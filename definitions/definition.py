@@ -1,9 +1,3 @@
-from typing import Pattern, Union
-
-from backends.software_package import SoftwarePackage
-from providers.provider import Provider
-
-
 class SoftwareDefinition:
     """
     A software definition.
@@ -15,7 +9,7 @@ class SoftwareDefinition:
     ignore_paths can specify a Pattern object applied against the src paths
       of files.
     """
-    # software_package: SoftwarePackage
-    # provider: Provider
-    # path_map: dict
-    # ignore_paths: [Pattern, None]
+    software_package = None  # : SoftwarePackage
+    provider = None  # : Provider
+    path_map = {}
+    ignore_paths = None

@@ -1,11 +1,9 @@
 import logging
 import os
-import pickle
 from concurrent.futures import ProcessPoolExecutor
 from hashlib import sha1
 from traceback import format_exc, print_exc
 from typing import List, Union
-from urllib.parse import urlparse
 
 from analysis.website_analyzer import WebsiteAnalyzer
 from backends.postgresql import PostgresqlBackend
@@ -58,8 +56,6 @@ class Scanner:
         """Scan a single site."""
         BACKEND.reopen_connection()
 
-        domain = urlparse(url).hostname
-
         result = BACKEND.retrieve_scan_result(url, self.scan_identifier)
         if result is not None:
             print_info(
@@ -107,7 +103,7 @@ class Scanner:
         """
         try:
             self.scan_site(*args, **kwargs)
-        except Exception as e:
+        except Exception:
             print('failure for', args, kwargs)
             print_exc()
             logging.error(format_exc())

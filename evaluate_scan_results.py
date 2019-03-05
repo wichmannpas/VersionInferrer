@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-import sys
 from argparse import ArgumentParser, Namespace
 from collections import defaultdict
 from contextlib import closing
 from pprint import pprint
-from typing import Dict, Tuple
+from typing import Dict
 
 from tqdm import tqdm
 

@@ -1,7 +1,5 @@
 from json import JSONEncoder
 
-from analysis.guess import Guess
-
 
 class CustomJSONEncoder(JSONEncoder):
     def default(self, o):
