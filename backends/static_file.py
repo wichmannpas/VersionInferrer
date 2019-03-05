@@ -1,3 +1,5 @@
+from typing import Optional
+
 from backends.model import Model
 from backends.software_version import SoftwareVersion
 
@@ -9,7 +11,7 @@ class StaticFile(Model):
     # webroot_path: str
     # checksum: bytes
 
-    def __init__(self, software_version: SoftwareVersion, src_path:
+    def __init__(self, software_version: Optional[SoftwareVersion], src_path:
                  str, webroot_path: str, checksum: bytes):
         self.software_version = software_version
         self.src_path = src_path

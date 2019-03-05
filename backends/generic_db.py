@@ -37,6 +37,7 @@ def use_result_cache(f):
 
 class GenericDatabaseBackend(Backend):
     """The backend handling the SQLite communication."""
+    _operator = '%s'
     # _operator: str
     # _true_value: str
 
@@ -76,7 +77,7 @@ class GenericDatabaseBackend(Backend):
                 return True
         raise BackendException('unsupported model type for deletion')
 
-    def mark_indexed(self, software_version: SoftwareVersion, indexed: bool = True) -> bool:
+    def mark_indexed(self, software_version: SoftwareVersion, indexed: bool = True):
         """Mark a software version as fully indexed. """
         software_version_id = self._get_id(software_version)
         if software_version_id is None:
@@ -442,7 +443,7 @@ class GenericDatabaseBackend(Backend):
                 return row[0]
             return 0
 
-    def store(self, element: Union[Model, List[Model]]) -> bool:
+    def store(self, element: Union[Model, List[Model]]) -> Union[bool, List[bool]]:
         """
         Insert or update an instance or multiple instances of a Model
         subclass.
@@ -751,6 +752,11 @@ class GenericDatabaseBackend(Backend):
                 v_internal_identifier, v_release_date
             in raw
         }
+
+    @abstractmethod
+    def _migrate(self):
+        """Create the database tables if they do not exist."""
+        self._connection = None
 
     @abstractmethod
     def _open_connection(self, *args, **kwargs):

@@ -1,10 +1,8 @@
 import json
 import sqlite3
-
 from contextlib import closing
 from typing import Iterable, Tuple
 
-from backends.backend import Backend
 from backends.generic_db import GenericDatabaseBackend
 
 

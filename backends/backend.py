@@ -130,4 +130,4 @@ class Backend(metaclass=ABCMeta):
 
 
 class BackendException(Exception):
-    """An exception occuring in a backend."""
+    """An exception occurring in a backend."""

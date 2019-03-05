@@ -2,12 +2,12 @@ import json
 from contextlib import closing
 from datetime import datetime
 from string import ascii_letters, digits
-from typing import Iterable, List, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 import psycopg2
 
-from backends.backend import Backend, BackendException
-from backends.generic_db import use_cache, GenericDatabaseBackend
+from backends.backend import BackendException
+from backends.generic_db import GenericDatabaseBackend, use_cache
 from backends.model import Model
 from backends.software_package import SoftwarePackage
 from backends.software_version import SoftwareVersion
@@ -119,7 +119,7 @@ class PostgresqlBackend(GenericDatabaseBackend):
             )
             '''.format(scan_identifier), (url, datetime.now(), json.dumps(result, cls=CustomJSONEncoder)))
 
-    def store(self, element: Union[Model, List[Model]]) -> bool:
+    def store(self, element: Union[Model, List[Model]]) -> Union[bool, List[bool]]:
         """
         Insert or update an instance of a Model subclass.
 
@@ -300,9 +300,9 @@ class PostgresqlBackend(GenericDatabaseBackend):
             ON static_file_use(static_file_id)
             ''')
 
-    def _store_many(self, elements: List[Model]) -> bool:
+    def _store_many(self, elements: List[Model]) -> Optional[List[bool]]:
         if not elements:
-            return False
+            return None
         model = type(elements[0])
         for elem in elements:
             if type(elem) != model:
@@ -310,23 +310,38 @@ class PostgresqlBackend(GenericDatabaseBackend):
                     'bulk insertion is only supported for objects of the '
                     'same type')
         if model == SoftwareVersion:
-            with closing(self._connection.cursor()) as cursor:
-                query_values = []
-                for software_version in elements:
-                    software_package_id = self._insert_software_package(
-                        software_version.software_package)
-                    query_values.append(cursor.mogrify('''(
+            # inspection does not notice that this is indeed a List[SoftwareVersion]
+            # noinspection PyTypeChecker
+            self._store_many_software_versions(elements)
+        elif model == StaticFile:
+            # inspection does not notice that this is indeed a List[StaticFile]
+            # noinspection PyTypeChecker
+            self._store_many_static_files(elements)
+        else:
+            # implement actual bulk insertion for other model types
+            return [
+                self.store(elem)
+                for elem in elements
+            ]
+
+    def _store_many_software_versions(self, versions: List[SoftwareVersion]):
+        with closing(self._connection.cursor()) as cursor:
+            query_values = []
+            for software_version in versions:
+                software_package_id = self._insert_software_package(
+                    software_version.software_package)
+                query_values.append(cursor.mogrify('''(
                         %(software_package_id)s,
                         %(name)s,
                         %(internal_identifier)s,
                         %(release_date)s
                     )''', {
-                        'software_package_id': software_package_id,
-                        'name': software_version.name,
-                        'internal_identifier': software_version.internal_identifier,
-                        'release_date': software_version.release_date
-                    }))
-                cursor.execute(b'''
+                    'software_package_id': software_package_id,
+                    'name': software_version.name,
+                    'internal_identifier': software_version.internal_identifier,
+                    'release_date': software_version.release_date
+                }))
+            cursor.execute(b'''
                 INSERT
                 INTO software_version (
                     software_package_id,
@@ -339,24 +354,24 @@ class PostgresqlBackend(GenericDatabaseBackend):
                         name=EXCLUDED.name
                 RETURNING id
                 ''')
-                for software_package, id in zip(elements, cursor.fetchall()):
-                    self._cache[software_package] = id
-                return None
-        elif model == StaticFile:
-            with closing(self._connection.cursor()) as cursor:
-                query_values = []
+            for software_package, id in zip(versions, cursor.fetchall()):
+                self._cache[software_package] = id
 
-                # add all static file objects to cache
-                self._insert_raw_static_files(elements)
+    def _store_many_static_files(self, static_files: List[StaticFile]):
+        with closing(self._connection.cursor()) as cursor:
+            query_values = []
 
-                for elem in elements:
-                    software_version_id = self._insert_software_version(
-                        elem.software_version)
-                    static_file_id = self._get_or_create_static_file(elem)
-                    query_values.append(
-                        cursor.mogrify('(%s, %s)',
-                        (software_version_id, static_file_id)))
-                cursor.execute(b'''
+            # add all static file objects to cache
+            self._insert_raw_static_files(static_files)
+
+            for static_file in static_files:
+                software_version_id = self._insert_software_version(
+                    static_file.software_version)
+                static_file_id = self._get_or_create_static_file(static_file)
+                query_values.append(
+                    cursor.mogrify('(%s, %s)',
+                                   (software_version_id, static_file_id)))
+            cursor.execute(b'''
                 INSERT
                 INTO static_file_use (
                     software_version_id,
@@ -364,13 +379,6 @@ class PostgresqlBackend(GenericDatabaseBackend):
                 VALUES ''' + b','.join(query_values) + b'''
                 ON CONFLICT DO NOTHING
                 ''')
-                return None
-        else:
-            # implement actual bulk insertion for other model types
-            return [
-                self.store(elem)
-                for elem in elements
-            ]
 
     def _insert_raw_static_files(self, static_files: List[StaticFile]) -> List[int]:
         """Get or insert multiple static files and get their ids."""
@@ -406,7 +414,7 @@ class PostgresqlBackend(GenericDatabaseBackend):
         return unpacked
 
     @staticmethod
-    def _unpack_list(raw: object) -> list:
+    def _unpack_list(raw: Iterable) -> Iterable:
         # postgres has native list support
         return raw
 
