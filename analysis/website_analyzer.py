@@ -2,7 +2,7 @@ import logging
 import pickle
 import os
 from collections import defaultdict
-from typing import Dict, FrozenSet, Iterable, List, Optional, Tuple, Union
+from typing import Dict, FrozenSet, Iterable, List, Optional, Tuple, Union, Set
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup, SoupStrainer
@@ -162,7 +162,7 @@ class WebsiteAnalyzer:
         Returns None if it is most recent (compared to index), the
         most recent version otherwise.
 
-        version can be an interable of multiple versions (i.e., a result
+        version can be an iterable of multiple versions (i.e., a result
         from analyze). In that case the
         most recent version of those versions is regarded.
         """
@@ -240,9 +240,7 @@ class WebsiteAnalyzer:
         self.debug_info['parameters']['complete_retrieval'] = self.complete_retrieval
         self.debug_info['parameters']['dry_run'] = self.dry_run
 
-    def _iterate(
-                self, guesses: List[Tuple[SoftwareVersion, int]]
-            ) -> List[Tuple[SoftwareVersion, int]]:
+    def _iterate(self, guesses: List[Guess]) -> List[Guess]:
         """Do an iteration."""
         logging.info('starting iteration %s', self.iteration)
         useless = False
@@ -265,7 +263,7 @@ class WebsiteAnalyzer:
                 for asset in self.retrieved_assets))
         status_codes = defaultdict(int)
         iteration_matching_assets = 0
-        for webroot_path, using_versions, different_cheksums in assets_with_entropy:
+        for webroot_path, using_versions, different_checksums in assets_with_entropy:
             if not self.complete_retrieval and \
                     iteration_matching_assets >= settings.MIN_ASSETS_PER_ITERATION:
                 logging.info(
@@ -276,12 +274,12 @@ class WebsiteAnalyzer:
             logging.info(
                 'Regarding path %s used by %s versions with '
                 '%s different revisions', webroot_path, using_versions,
-                different_cheksums)
+                different_checksums)
             asset_debug_info = {
                 'url': url,
                 'webroot_path': webroot_path,
                 'using_versions': using_versions,
-                'different_checksums': different_cheksums,
+                'different_checksums': different_checksums,
             }
             if not self.dry_run:
                 asset = Asset(url, self._cache)
@@ -344,7 +342,7 @@ class WebsiteAnalyzer:
             assert isinstance(self._cache, dict), 'invalid cache file'
 
     def _map_retrieved_assets_to_versions(
-            self) -> Dict[SoftwareVersion, Tuple[int, int]]:
+            self) -> Dict[SoftwareVersion, Tuple[Set[Asset], Set[Asset]]]:
         """
         Create a dictionary mapping from every software version to the number
         of retrieved assets which are in use and which are expected but not in
@@ -427,7 +425,7 @@ class WebsiteAnalyzer:
             self.retrieved_resources.add(asset)
 
     @staticmethod
-    def _guess_decisiveness(guesses: List[Guess]) -> int:
+    def _guess_decisiveness(guesses: List[Guess]) -> float:
         """Calculate the difference from the best guess to other guesses."""
         if not guesses:
             return 0

@@ -97,10 +97,10 @@ class WappalyzerApp:
         of strings for multi-element values. This returns a list for all.
         """
         data = self._raw_data.get(category)
-        if not data:
-            return []
         if isinstance(data, List):
             return data
+        if not data:
+            return []
         return [data]
 
     @staticmethod

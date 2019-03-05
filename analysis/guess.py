@@ -1,7 +1,7 @@
-from typing import Union
+from typing import Optional
 
 from backends.software_version import SoftwareVersion
-from settings import POSITIVE_MATCH_WEIGHT, NEGATIVE_MATCH_WEIGHT
+from settings import NEGATIVE_MATCH_WEIGHT, POSITIVE_MATCH_WEIGHT
 
 
 class Guess:
@@ -15,8 +15,8 @@ class Guess:
     def __init__(
             self,
             software_version: SoftwareVersion,
-            positive_matches: Union[set, None] = None,
-            negative_matches: Union[set, None] = None):
+            positive_matches: Optional[set] = None,
+            negative_matches: Optional[set] = None):
         self.software_version = software_version
         self.positive_matches = set()
         if positive_matches:
@@ -36,7 +36,7 @@ class Guess:
 
     def __ge__(self, other) -> bool:
         return self.strength >= other.strength
-    
+
     def __gt__(self, other) -> bool:
         return self.strength > other.strength
 
