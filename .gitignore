@@ -5,6 +5,8 @@ db.sqlite3-journal
 htmlcov
 .coverage
 **.swp
+.pyenv
+.idea
 
 settings_local.py
 
