@@ -1,8 +1,8 @@
 import logging
-import pickle
 import os
+import pickle
 from collections import defaultdict
-from typing import Dict, FrozenSet, Iterable, List, Optional, Tuple, Union, Set
+from typing import Dict, FrozenSet, Iterable, List, Optional, Set, Tuple, Union
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup, SoupStrainer
@@ -85,6 +85,26 @@ class WebsiteAnalyzer:
         first_estimates = main_page.extract_information()
 
         self._retrieve_included_assets(main_page)
+
+        # check if asset paths differ from expected paths
+        updated_base_paths = set()
+        for asset in self.retrieved_assets:
+            expected = asset.expected_webroot_paths
+            for path in expected:
+                if path != asset.webroot_path:
+                    if path.endswith(asset.webroot_path):
+                        updated_base_paths.add(path.replace(asset.webroot_path, ''))
+                    elif asset.webroot_path.endswith(path):
+                        updated_base_paths.add(asset.webroot_path.replace(path, ''))
+
+        if updated_base_paths:
+            # TODO: support multiple updated base path alternatives (e.g., attempting all of them)
+            self.primary_url = join_url(self.primary_url, updated_base_paths.pop())
+            logging.info('actual webroot paths different than expected, updating primary url to %s', self.primary_url)
+            if updated_base_paths:
+                logging.warning('there are further updated_base_paths that are ignored: %s',
+                             ','.join(updated_base_paths))
+
         # regard favicon
         self.retrieved_resources.add(Asset(
             join_url(self.primary_url, 'favicon.ico'), self._cache))
@@ -92,7 +112,7 @@ class WebsiteAnalyzer:
         # First iteration uses all first estimates as well as best
         # guesses from main assets
         guesses = [Guess(estimate) for estimate in first_estimates] + \
-            self._get_best_guesses(settings.GUESS_LIMIT)
+                  self._get_best_guesses(settings.GUESS_LIMIT)
         logging.info('assets from primary page and first estimates lead to guesses: %s', guesses)
 
         self.debug_info['initial_guesses'] = [guess.debug_serialize() for guess in guesses]
@@ -154,8 +174,8 @@ class WebsiteAnalyzer:
 
     @staticmethod
     def more_recent_version(
-                version: Union[SoftwareVersion, Iterable[SoftwareVersion]]
-            ) -> Union[None, SoftwareVersion]:
+            version: Union[SoftwareVersion, Iterable[SoftwareVersion]]
+    ) -> Union[None, SoftwareVersion]:
         """
         Check whether version is the most recent release of its
         software package.

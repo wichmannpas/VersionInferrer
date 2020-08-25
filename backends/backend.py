@@ -46,6 +46,11 @@ class Backend(metaclass=ABCMeta):
         """Retrieve all available packages whose names are likely to name."""
 
     @abstractmethod
+    def retrieve_static_files_by_checksum(
+            self, checksum: bytes) -> Set[StaticFile]:
+        """Retrieve all static files with a specific checksum."""
+
+    @abstractmethod
     def retrieve_static_file_users_by_checksum(
             self, checksum: bytes) -> Set[SoftwareVersion]:
         """Retrieve all versions using a static file with a specific checksum."""

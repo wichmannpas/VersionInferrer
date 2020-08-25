@@ -2,6 +2,7 @@ from typing import Set
 
 from analysis.resource import Resource, RetrievalFailure
 from backends.software_version import SoftwareVersion
+from backends.static_file import StaticFile
 from base.checksum import calculate_checksum
 from settings import BACKEND, FAILED_ASSET_WEIGHT
 
@@ -10,6 +11,7 @@ class Asset(Resource):
     """
     An asset from a website.
     """
+
     def __eq__(self, other) -> bool:
         if not super().__eq__(other):
             return False
@@ -49,7 +51,7 @@ class Asset(Resource):
         if not hasattr(self, '_expected_versions'):
             self._expected_versions = BACKEND \
                 .retrieve_static_file_users_by_webroot_paths(
-                    self.webroot_path)
+                self.webroot_path)
         return self._expected_versions
 
     @property
@@ -80,6 +82,24 @@ class Asset(Resource):
         return base
 
     @property
+    def expected_webroot_paths(self) -> Set[str]:
+        if not hasattr(self, '_expected_webroot_paths'):
+            self._expected_webroot_paths = {
+                static_file.webroot_path
+                for static_file in self.known_static_files
+            }
+        return self._expected_webroot_paths
+
+    @property
+    def known_static_files(self) -> Set[StaticFile]:
+        if not self.success:
+            return set()
+        if not hasattr(self, '_known_static_files'):
+            self._known_static_files = BACKEND.retrieve_static_files_by_checksum(
+                self.checksum)
+        return self._known_static_files
+
+    @property
     def using_versions(self) -> Set[SoftwareVersion]:
         """
         Retrieve the versions using this asset
@@ -90,5 +110,5 @@ class Asset(Resource):
         if not hasattr(self, '_using_versions'):
             self._using_versions = BACKEND \
                 .retrieve_static_file_users_by_checksum(
-                    self.checksum)
+                self.checksum)
         return self._using_versions

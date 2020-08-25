@@ -21,6 +21,7 @@ def use_cache(f):
         if elem_id is not None:
             self._cache[element] = elem_id
         return elem_id
+
     return decorated
 
 
@@ -32,12 +33,14 @@ def use_result_cache(f):
         result = f(self, *args, **kwargs)
         self._result_cache[signature] = result
         return result
+
     return decorated
 
 
 class GenericDatabaseBackend(Backend):
     """The backend handling the SQLite communication."""
     _operator = '%s'
+
     # _operator: str
     # _true_value: str
 
@@ -121,7 +124,7 @@ class GenericDatabaseBackend(Backend):
                 ON
                     us.static_file_id = sf.id
                 WHERE sf.checksum = ''' + self._operator,
-                (checksum,))
+                           (checksum,))
             total_version_count, global_using_versions_count = cursor.fetchone()
         # TODO: use packages instead of versions to prevent higher weight of packages with a higher number of released versions?
         if not global_using_versions_count:
@@ -212,21 +215,21 @@ class GenericDatabaseBackend(Backend):
                  WHERE
                      us.static_file_id=sf.id AND
                      us.software_version_id IN ''' +
-                     operators +
-                     ''') vu
-                 FROM
-                     static_file sf
-                 WHERE
-                     EXISTS (
-                         SELECT
-                             1
-                         FROM
-                             static_file_use us
-                         WHERE
-                             us.static_file_id=sf.id)
-                 ORDER BY
-                     vu DESC
-                 LIMIT ''' + self._operator + '''
+                           operators +
+                           ''') vu
+                       FROM
+                           static_file sf
+                       WHERE
+                           EXISTS (
+                               SELECT
+                                   1
+                               FROM
+                                   static_file_use us
+                               WHERE
+                                   us.static_file_id=sf.id)
+                       ORDER BY
+                           vu DESC
+                       LIMIT ''' + self._operator + '''
             ''', tuple(list_params + [limit]))
             return {
                 (frozenset(user
@@ -254,6 +257,24 @@ class GenericDatabaseBackend(Backend):
                 self._unpack_binary(checksum))
             for static_file_id, src_path, webroot_path, checksum
             in self._retrieve_static_files_by_version(version)}
+
+    def retrieve_static_files_by_checksum(
+            self, checksum: bytes) -> Set[StaticFile]:
+        """Retrieve all static files with a specific checksum."""
+        with closing(self._connection.cursor()) as cursor:
+            cursor.execute('''
+            SELECT
+                sf.src_path,
+                sf.webroot_path
+            FROM
+                static_file sf
+            WHERE
+                sf.checksum=''' + self._operator + '''
+            ''', (checksum,))
+            return {
+                StaticFile(software_version=None, src_path=row[0], webroot_path=row[1], checksum=checksum)
+                for row in cursor.fetchall()
+            }
 
     def retrieve_static_file_users_by_checksum(
             self, checksum: bytes) -> Set[SoftwareVersion]:
@@ -557,9 +578,9 @@ class GenericDatabaseBackend(Backend):
             self,
             a: SoftwareVersion,
             b: SoftwareVersion) -> Set[
-                Tuple[
-                    Union[None, StaticFile],
-                    Union[None, StaticFile]]]:
+        Tuple[
+            Union[None, StaticFile],
+            Union[None, StaticFile]]]:
         """
         Get the delta between the static files of two software versions.
 
