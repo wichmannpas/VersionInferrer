@@ -124,7 +124,8 @@ class Resource:
         except (HTTPError, RequestException, UnicodeError):
             self._success = False
         else:
-            self.cache[self.url] = self._response
+            if self.cache:
+                self.cache[self.url] = self._response
             self._success = True
 
         if not self._success or self._response.status_code != 200:
