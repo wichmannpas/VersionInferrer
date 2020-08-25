@@ -405,7 +405,7 @@ class WebsiteAnalyzer:
             if (parsed_url.scheme and
                     parsed_url.scheme not in SUPPORTED_SCHEMES):
                 continue
-            file_name = os.path.basename(referenced_url)
+            file_name = os.path.basename(referenced_url).split('?', maxsplit=1)[0]
             file = None
             for file_type in file_types_for_analysis:
                 try:
