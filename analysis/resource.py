@@ -1,14 +1,13 @@
 import logging
 import os
-from string import ascii_letters, digits
-from typing import Optional, Set, Union
+import traceback
+from typing import Optional, Set
 from urllib.parse import urlparse
-from urllib3.exceptions import HTTPError
-
-from bs4 import BeautifulSoup
 
 import requests
+from bs4 import BeautifulSoup
 from requests.exceptions import RequestException
+from urllib3.exceptions import HTTPError
 
 from analysis.wappalyzer_apps import wappalyzer_apps
 from backends.software_version import SoftwareVersion
@@ -25,6 +24,7 @@ class Resource:
     """
     A resource is any file which can be retrieved from a url.
     """
+
     # url: str
 
     def __init__(self, url: str, cache: Optional[dict] = None):
@@ -119,7 +119,8 @@ class Resource:
 
         try:
             self._response = requests.get(self.url, timeout=HTTP_TIMEOUT)
-        except (HTTPError, RequestException, UnicodeError):
+        except (HTTPError, RequestException, UnicodeError) as ex:
+            logging.warning(str(ex))
             self._success = False
         else:
             if self.cache:
