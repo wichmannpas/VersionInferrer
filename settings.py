@@ -7,7 +7,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 CVE_STATISTICS_FILE = os.path.join(BASE_DIR, 'vendor/cve_statistics')
 
-HTTP_TIMEOUT = 3
+HTTP_TIMEOUT = 5
 
 
 # Analysis
