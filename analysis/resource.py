@@ -195,6 +195,9 @@ class Resource:
         # TODO: Therefore, do not throw non-first components away
         # TODO: Software packages with spaces in name
         matches = BACKEND.retrieve_packages_by_name(components[0])
+        if not matches:
+            # attempt full generator string (e.g., for names with spaces)
+            matches = BACKEND.retrieve_packages_by_name(generator_tag)
         for match in matches:
             versions = BACKEND.retrieve_versions(match)
             matching_versions = versions.copy()

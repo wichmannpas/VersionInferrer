@@ -8,7 +8,10 @@ from providers.git import GitTagProvider
 class Magento(SoftwareDefinition):
     software_package = SoftwarePackage(
         name='Magento Open Source',
-        vendor='Magento Inc.')
+        vendor='Magento Inc.',
+        alternative_names=[
+            'Magento',
+        ])
     provider = GitTagProvider(
         software_package=software_package,
         url='https://github.com/magento/magento2.git',
