@@ -1,16 +1,17 @@
 import os
-from typing import List, Union
+from typing import List, Optional
 
 from backends.model import Model
 
 
 class SoftwarePackage(Model):
     """A software package."""
+
     # name: str
     # vendor: str
     # alternative_names: list
 
-    def __init__(self, name: str, vendor: str, alternative_names: Union[List, None] = None):
+    def __init__(self, name: str, vendor: str, alternative_names: Optional[List] = None):
         self.name = name
         self.vendor = vendor
         self.alternative_names = alternative_names

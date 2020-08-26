@@ -6,10 +6,10 @@ import sys
 from argparse import ArgumentParser, Namespace
 from fnmatch import fnmatch
 
+import settings
 from analysis.website_analyzer import WebsiteAnalyzer
 from base.json import CustomJSONEncoder
 from definitions import definitions
-import settings
 
 
 def analyze(arguments: Namespace):
@@ -20,7 +20,7 @@ def analyze(arguments: Namespace):
 
     if arguments.persist_resources:
         assert os.path.isdir(arguments.persist_resources) or \
-            not os.path.exists(arguments.persist_resources), 'invalid persist path'
+               not os.path.exists(arguments.persist_resources), 'invalid persist path'
 
         analyzer.persist_resources = arguments.persist_resources
 
@@ -36,9 +36,11 @@ def analyze(arguments: Namespace):
         packages = [
             definition.software_package
             for definition in definitions
-            if fnmatch(
-                definition.software_package.name.lower(),
-                arguments.complete_index_retrieval_for.lower())
+            if any(
+                fnmatch(
+                    name.lower(), arguments.complete_index_retrieval_for.lower())
+                for name in [definition.software_package.name] + (definition.software_package.alternative_names or [])
+            )
         ]
         result = analyzer.perform_complete_index_retrieval_for(packages, arguments.dry_run)
     else:
