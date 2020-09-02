@@ -8,6 +8,7 @@ class TextFile(File):
     A plain text file.
     """
     USUAL_FILE_NAME_EXTENSIONS = [
+        'markdown',
         'md',
         'rst',
         'txt',

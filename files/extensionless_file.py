@@ -3,23 +3,18 @@ from typing import Union
 from files.file import File
 
 
-class ConfigFile(File):
+class ExtensionlessFile(File):
     """
-    A dist file.
+    A file without an extension (README, CHANGES, Jenkinsfile)
     """
 
-    USUAL_FILE_NAME_EXTENSIONS = [
-        'conf',
-        'dist',
-        'ini',
-    ]
     USE_FOR_ANALYSIS = True
     USE_FOR_INDEX = True
 
     @property
     def matches_file_type(self) -> bool:
         """Whether the current instance is a static file of this type."""
-        return self.has_usual_file_name_extension
+        return '.' not in self.file_name
 
     @property
     def normalized_content(self) -> Union[bytes, None]:
