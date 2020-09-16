@@ -62,7 +62,7 @@ class File(metaclass=ABCMeta):
     def has_usual_file_name_extension(self) -> bool:
         """Whether the file has a usual file name extension."""
         return any(
-            self.file_name.endswith('.' + extension)
+            self.file_name.lower().endswith('.' + extension.lower())
             for extension in self.USUAL_FILE_NAME_EXTENSIONS)
 
     @abstractproperty
