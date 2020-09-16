@@ -12,6 +12,8 @@ class Provider(metaclass=ABCMeta):
 
     A provider exposes functionality to retrieve code and versions.
     """
+    cache_directory: str
+
     def __init__(
             self, software_package: SoftwarePackage,
             version_name_derivator: Union[Callable[[str], str], None] = None):
