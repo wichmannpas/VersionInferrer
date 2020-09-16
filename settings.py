@@ -17,7 +17,7 @@ GUESS_IGNORE_MIN_POSITIVE = 2  # The minumum positive count the best guess needs
 GUESS_RELATIVE_IGNORE_DISTANCE = 0.3  # The relative distance of the best guess strength to inferior guesses to ignore them
 HTML_PARSER = 'html.parser'
 HTML_RELEVANT_ELEMENTS = [
-    'a',  # i.e. directory indexes
+    # 'a',  # i.e. directory indexes
     'link',
     'script',
     'style',
