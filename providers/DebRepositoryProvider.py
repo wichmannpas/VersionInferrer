@@ -3,7 +3,7 @@ import re
 import tarfile
 from datetime import datetime
 from pathlib import Path
-from subprocess import check_call
+from subprocess import check_call, check_output
 from typing import Callable, Set, Union
 
 import requests
@@ -77,13 +77,14 @@ class DebRepositoryProvider(Provider):
 
     def _download_deb_data(self, version: SoftwareVersion):
         """
-        Download version's DEB file and extract data.tar.gz if it does not exist in cache.
+        Download version's DEB file and extract data.tar.* if it does not exist in cache.
 
-        As reading files from large tar.gz files directly is very slow (as every
+        As reading files from large tar.xz files directly is very slow (as every
         file is retrieved individually on its own), the data is fully extracted.
         """
         cache_deb_path = self._cache_deb_path(version)
         cache_data_path = self._cache_data_path(version)
+        cache_data_path_xz = self._cache_data_path(version)
         cache_data_dir_path = self._cache_data_dir_path(version)
 
         if cache_data_dir_path.exists():
@@ -100,13 +101,22 @@ class DebRepositoryProvider(Provider):
                 for chunk in deb_stream.iter_content(chunk_size=10000):
                     deb_file.write(chunk)
 
-        if not cache_data_path.exists():
+        if not cache_data_path.exists() and not cache_data_path_xz.exists():
+            data_file_name = 'data.tar.gz'
+            file_list = check_output((
+                'ar',
+                't',
+                cache_deb_path.as_posix()
+            )).decode().splitlines()
+            if 'data.tar.xz' in file_list:
+                cache_data_path = cache_data_path_xz
+                data_file_name = 'data.tar.xz'
             with cache_data_path.open('wb') as data_file:
                 check_call((
                     'ar',
                     'p',
                     cache_deb_path.as_posix(),
-                    'data.tar.gz',
+                    data_file_name,
                 ), stdout=data_file)
 
         with tarfile.open(cache_data_path) as data_file:
@@ -123,6 +133,10 @@ class DebRepositoryProvider(Provider):
     def _cache_data_path(self, version) -> Path:
         # TODO: remove unsafe characters from internal identifier
         return Path(self.cache_directory) / (version.internal_identifier + '.tar.gz')
+
+    def _cache_data_path_xz(self, version) -> Path:
+        # TODO: remove unsafe characters from internal identifier
+        return Path(self.cache_directory) / (version.internal_identifier + '.tar.xz')
 
     def _cache_data_dir_path(self, version) -> Path:
         # TODO: remove unsafe characters from internal identifier
