@@ -44,19 +44,21 @@ class DebRepositoryProvider(Provider):
 
     def list_files(self, version: SoftwareVersion):
         self._download_deb_data(version)
+        cache_data_dir = self._cache_data_dir_path(version)
 
-        with tarfile.open(self._cache_data_path(version)) as data_file:
-            return [
-                Path(member.name).as_posix()
-                for member in data_file.getmembers()
-                if member.isfile()
-            ]
+        return [
+            path.relative_to(cache_data_dir).as_posix()
+            for path in cache_data_dir.glob('**/*')
+            if path.is_file()
+        ]
 
     def get_file_data(self, version: SoftwareVersion, path: str):
         self._download_deb_data(version)
 
-        with tarfile.open(self._cache_data_path(version)) as data_file:
-            return data_file.extractfile('./' + path).read()
+        file_path = self._cache_data_dir_path(version) / path
+        assert file_path.is_file(), 'file at path %s does not exist' % path
+        with file_path.open('rb') as file:
+            return file.read()
 
     def _read_packages(self) -> dict:
         if not hasattr(self, '_cached_packages'):
@@ -76,11 +78,15 @@ class DebRepositoryProvider(Provider):
     def _download_deb_data(self, version: SoftwareVersion):
         """
         Download version's DEB file and extract data.tar.gz if it does not exist in cache.
+
+        As reading files from large tar.gz files directly is very slow (as every
+        file is retrieved individually on its own), the data is fully extracted.
         """
         cache_deb_path = self._cache_deb_path(version)
         cache_data_path = self._cache_data_path(version)
+        cache_data_dir_path = self._cache_data_dir_path(version)
 
-        if cache_data_path.exists():
+        if cache_data_dir_path.exists():
             return
 
         if not cache_deb_path.exists():
@@ -94,16 +100,21 @@ class DebRepositoryProvider(Provider):
                 for chunk in deb_stream.iter_content(chunk_size=10000):
                     deb_file.write(chunk)
 
-        with cache_data_path.open('wb') as data_file:
-            check_call((
-                'ar',
-                'p',
-                cache_deb_path.as_posix(),
-                'data.tar.gz',
-            ), stdout=data_file)
+        if not cache_data_path.exists():
+            with cache_data_path.open('wb') as data_file:
+                check_call((
+                    'ar',
+                    'p',
+                    cache_deb_path.as_posix(),
+                    'data.tar.gz',
+                ), stdout=data_file)
 
-        # remove deb file
+        with tarfile.open(cache_data_path) as data_file:
+            data_file.extractall(cache_data_dir_path.as_posix())
+
+        # remove deb and data file
         cache_deb_path.unlink()
+        cache_data_path.unlink()
 
     def _cache_deb_path(self, version) -> Path:
         # TODO: remove unsafe characters from internal identifier
@@ -112,3 +123,7 @@ class DebRepositoryProvider(Provider):
     def _cache_data_path(self, version) -> Path:
         # TODO: remove unsafe characters from internal identifier
         return Path(self.cache_directory) / (version.internal_identifier + '.tar.gz')
+
+    def _cache_data_dir_path(self, version) -> Path:
+        # TODO: remove unsafe characters from internal identifier
+        return Path(self.cache_directory) / version.internal_identifier
