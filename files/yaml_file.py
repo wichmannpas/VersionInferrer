@@ -32,7 +32,7 @@ class YamlFile(File):
         The content of this static file normalized for this file type.
         """
         try:
-            data = yaml.load(self.raw_content.decode())
+            data = yaml.safe_load(self.raw_content.decode())
             return normalize_data(data)
         except (TypeError, ValueError, YAMLError):
             return None
