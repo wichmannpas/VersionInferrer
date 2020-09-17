@@ -99,11 +99,15 @@ class WebsiteAnalyzer:
 
         if updated_base_paths:
             # TODO: support multiple updated base path alternatives (e.g., attempting all of them)
-            self.primary_url = join_url(self.primary_url, updated_base_paths.pop())
+            base_path = updated_base_paths.pop()
+            if base_path.startswith('/'):
+                base_url = urlparse(self.primary_url)
+                self.primary_url = '{}://{}/'.format(base_url.scheme, base_url.netloc)
+            self.primary_url = join_url(self.primary_url, base_path)
             logging.info('actual webroot paths different than expected, updating primary url to %s', self.primary_url)
             if updated_base_paths:
                 logging.warning('there are further updated_base_paths that are ignored: %s',
-                             ','.join(updated_base_paths))
+                                ','.join(updated_base_paths))
 
         # regard favicon
         self.retrieved_resources.add(Asset(
