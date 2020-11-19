@@ -8,7 +8,7 @@ class ExtensionlessFile(File):
     A file without an extension (README, CHANGES, Jenkinsfile)
     """
 
-    USE_FOR_ANALYSIS = True
+    USE_FOR_ANALYSIS = False
     USE_FOR_INDEX = True
 
     @property
