@@ -86,6 +86,18 @@ class WebsiteAnalyzer:
 
         self._retrieve_included_assets(main_page)
 
+        # First iteration uses all first estimates as well as best
+        # guesses from main assets
+        guesses = [Guess(estimate) for estimate in first_estimates] + \
+                  self._get_best_guesses(settings.GUESS_LIMIT)
+        logging.info('assets from primary page and first estimates lead to guesses: %s', guesses)
+
+        if not guesses:
+            self._retrieve_popular_per_package()
+            guesses = [Guess(estimate) for estimate in first_estimates] + \
+                      self._get_best_guesses(settings.GUESS_LIMIT)
+            logging.info('guesses from popular files: %s', guesses)
+
         # check if asset paths differ from expected paths
         updated_base_paths = set()
         for asset in self.retrieved_assets:
@@ -112,12 +124,6 @@ class WebsiteAnalyzer:
         # regard favicon
         self.retrieved_resources.add(Asset(
             join_url(self.primary_url, 'favicon.ico'), self._cache))
-
-        # First iteration uses all first estimates as well as best
-        # guesses from main assets
-        guesses = [Guess(estimate) for estimate in first_estimates] + \
-                  self._get_best_guesses(settings.GUESS_LIMIT)
-        logging.info('assets from primary page and first estimates lead to guesses: %s', guesses)
 
         self.debug_info['initial_guesses'] = [guess.debug_serialize() for guess in guesses]
 
@@ -205,6 +211,24 @@ class WebsiteAnalyzer:
         if most_recent == version:
             return None
         return most_recent
+
+    def _retrieve_popular_per_package(self):
+        """
+        Retrieve some popular files for every known software package to find initial guesses.
+        """
+        num_popular_files_per_package = 2
+
+        logging.info('retrieving popular files to determine initial guesses')
+
+        with (settings.CACHE_DIR / 'popular_files.pickle').open('rb') as cache_file:
+            popular_files = pickle.load(cache_file)
+        if popular_files['refresh'] < BACKEND.retrieve_most_recent_indexed_timestamp():
+            logging.warning('Popular files cache is OUT OF DATE! UPDATED REQUIRED, run ./update_popular_files.py')
+        for software_package, files in popular_files['data'].items():
+            for file in files[:num_popular_files_per_package]:
+                url = join_url(self.primary_url, file.webroot_path)
+                asset = Asset(url, self._cache)
+                self.retrieved_resources.add(asset)
 
     def _calculate_support(self, guesses: List[Guess]) -> Tuple[List[Guess], float]:
         """Calculate the support of guesses and get the best guess(es)."""

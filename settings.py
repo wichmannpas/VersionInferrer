@@ -1,14 +1,14 @@
 import os
 import sys
 
-
 # General settings
+from pathlib import Path
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 CVE_STATISTICS_FILE = os.path.join(BASE_DIR, 'vendor/cve_statistics')
 
 HTTP_TIMEOUT = 5
-
 
 # Analysis
 GUESS_LIMIT = 7
@@ -22,9 +22,9 @@ HTML_RELEVANT_ELEMENTS = [
     'script',
     'style',
 ]
-ITERATION_MIN_IMPROVEMENT = 0.5 # The minimum increase in the difference to the best guess required per iteration
+ITERATION_MIN_IMPROVEMENT = 0.5  # The minimum increase in the difference to the best guess required per iteration
 MAX_ITERATIONS = 15
-MAX_ITERATIONS_WITHOUT_IMPROVEMENT = 3 # The maximum number of consecutive iterations with improvement less than min
+MAX_ITERATIONS_WITHOUT_IMPROVEMENT = 3  # The maximum number of consecutive iterations with improvement less than min
 MIN_ASSETS_PER_ITERATION = 2
 MAX_ASSETS_PER_ITERATION = 8
 MIN_ABSOLUTE_SUPPORT = 10
@@ -37,15 +37,13 @@ POSITIVE_MATCH_WEIGHT = 1
 NEGATIVE_MATCH_WEIGHT = 0.1
 FAILED_ASSET_WEIGHT = 1
 
-
 # Backend
 from backends.sqlite import SqliteBackend
+
 BACKEND = SqliteBackend(os.path.join(BASE_DIR, 'db.sqlite3'))
 
-
 # Cache
-CACHE_DIR = os.path.join(BASE_DIR, 'cache')
-
+CACHE_DIR = Path(BASE_DIR) / 'cache'
 
 OVERWRITABLE_SETTINGS = (
     ('GUESS_LIMIT', int),
@@ -62,7 +60,6 @@ OVERWRITABLE_SETTINGS = (
     ('FAILED_ASSET_WEIGHT', float),
     ('MIN_ASSETS_PER_ITERATION', int),
 )
-
 
 # import local settings if not in unit test mode
 if 'unittest' not in sys.modules:

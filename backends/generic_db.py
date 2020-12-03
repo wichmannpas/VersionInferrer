@@ -97,6 +97,18 @@ class GenericDatabaseBackend(Backend):
                 id=''' + self._operator + '''
             ''', (datetime.now(), software_version_id,))
 
+    def retrieve_most_recent_indexed_timestamp(self) -> datetime:
+        """Mark a software version as fully indexed. """
+        with closing(self._connection.cursor()) as cursor:
+            # Insert new element
+            cursor.execute('''
+            SELECT
+                MAX(indexed)
+            FROM
+                software_version
+            ''')
+            return cursor.fetchone()[0]
+
     def reopen_connection(self):
         """Open a new connection to the backend store."""
         self._open_connection(*self._args, **self._kwargs)
@@ -190,6 +202,75 @@ class GenericDatabaseBackend(Backend):
                  self._unpack_binary(checksum)))
             for static_file_id, src_path, webroot_path, checksum
             in self._retrieve_static_files_by_version(version, max_users)}
+
+    def retrieve_static_files_popular_for_software_package(
+            self, software_package: SoftwarePackage, limit: int = 5) -> List[StaticFile]:
+        """
+        Get a small number of files for the given software package, chosen by following critia:
+        * popular among the given software package, i.e., used by a high number of versions of that package
+        * ideally distinct for that software package, i.e., used by as few versions of *other* software packages
+          as possible.
+
+        Return an ordered list of the static files.
+        """
+        with closing(self._connection.cursor()) as cursor:
+            # TODO: check whether this query is supported by SQLite
+            cursor.execute('''
+            SELECT
+                i.static_file_id,
+                i.src_path,
+                i.webroot_path,
+                i.checksum,
+                i.own_using_versions,
+                i.foreign_using_versions,
+                i.own_using_versions - i.foreign_using_versions delta_count
+            FROM 
+                (
+                SELECT
+                    sf.id static_file_id,
+                    sf.src_path src_path,
+                    sf.webroot_path webroot_path,
+                    sf.checksum checksum,
+                    (
+                        SELECT COUNT(*)
+                        FROM static_file_use sfu
+                        WHERE
+                            sfu.static_file_id = sf.id AND
+                            sfu.software_version_id IN (
+                                SELECT sv.id FROM software_version sv WHERE sv.software_package_id = ''' + self._operator + '''
+                            )
+                    ) own_using_versions,
+                    (
+                        SELECT COUNT(*)
+                        FROM static_file_use sfu
+                        WHERE
+                            sfu.static_file_id = sf.id AND
+                            sfu.software_version_id NOT IN (
+                                SELECT sv.id FROM software_version sv WHERE sv.software_package_id = ''' + self._operator + '''
+                            )
+                    ) foreign_using_versions
+                FROM
+                    static_file sf
+                GROUP BY
+                    sf.id, sf.src_path, sf.webroot_path, sf.checksum
+            ) i
+            ORDER BY
+                delta_count DESC
+            LIMIT ''' + self._operator + '''
+            ''', 2 * (self._get_id(software_package),) + (limit,))
+
+            return [
+                StaticFile(
+                    None,
+                    src_path,
+                    webroot_path,
+                    self._unpack_binary(checksum),
+                    own_using_versions=own_using_versions,
+                    foreign_using_versions=foreign_using_versions,
+                    usage_delta=delta)
+                for static_file_id, src_path, webroot_path, checksum, own_using_versions, foreign_using_versions, delta
+                in cursor.fetchall()
+            ]
 
     def retrieve_static_files_popular_to_versions(
             self, versions: Iterable[SoftwareVersion],

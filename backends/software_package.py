@@ -32,9 +32,7 @@ class SoftwarePackage(Model):
         """A path to the cache directory."""
         # TODO: Find better solution than local import?
         from settings import CACHE_DIR
-        return os.path.join(
-            CACHE_DIR,
-            self.name.lower())
+        return (CACHE_DIR / self.name.lower()).as_posix()
 
     def serialize(self) -> dict:
         """Serialize into a dict."""

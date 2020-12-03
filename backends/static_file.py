@@ -12,11 +12,12 @@ class StaticFile(Model):
     # checksum: bytes
 
     def __init__(self, software_version: Optional[SoftwareVersion], src_path:
-                 str, webroot_path: str, checksum: bytes):
+                 str, webroot_path: str, checksum: bytes, **extras):
         self.software_version = software_version
         self.src_path = src_path
         self.webroot_path = webroot_path
         self.checksum = checksum
+        self.extras = extras
 
     def __str__(self) -> str:
         return '{} -> {}'.format(self.webroot_path, self.src_path)
