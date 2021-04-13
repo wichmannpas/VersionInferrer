@@ -25,21 +25,22 @@ def affected_versions(cve: dict) -> Set[SoftwareVersion]:
     """Find all versions affected by a cve."""
     result = set()
 
-    affected_products = cve['affects']['vendor']['vendor_data']
-    for products in affected_products:
-        products = products['product']['product_data']
-        for product in products:
-            versions = product['version']['version_data']
-            product = product['product_name']
-            for version in versions:
-                version = version['version_value']
+    if 'affects' in cve:
+        affected_products = cve['affects']['vendor']['vendor_data']
+        for products in affected_products:
+            products = products['product']['product_data']
+            for product in products:
+                versions = product['version']['version_data']
+                product = product['product_name']
+                for version in versions:
+                    version = version['version_value']
 
-                result.update(match_str_to_software_version(product, version))
+                    result.update(match_str_to_software_version(product, version))
     return result
 
 
 def cve_stats_for_year(year: int) -> Dict[SoftwareVersion, Set[str]]:
-    url = 'https://static.nvd.nist.gov/feeds/json/cve/1.0/nvdcve-1.0-{}.json.gz'.format(
+    url = 'https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-{}.json.gz'.format(
         year)
     cve_items = json.loads(
         decompress(requests.get(url).content).decode())['CVE_Items']
