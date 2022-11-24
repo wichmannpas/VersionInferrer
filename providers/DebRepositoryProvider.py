@@ -120,7 +120,26 @@ class DebRepositoryProvider(Provider):
                 ), stdout=data_file)
 
         with tarfile.open(cache_data_path) as data_file:
-            data_file.extractall(cache_data_dir_path.as_posix())
+            def is_within_directory(directory, target):
+                
+                abs_directory = os.path.abspath(directory)
+                abs_target = os.path.abspath(target)
+            
+                prefix = os.path.commonprefix([abs_directory, abs_target])
+                
+                return prefix == abs_directory
+            
+            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+            
+                for member in tar.getmembers():
+                    member_path = os.path.join(path, member.name)
+                    if not is_within_directory(path, member_path):
+                        raise Exception("Attempted Path Traversal in Tar File")
+            
+                tar.extractall(path, members, numeric_owner=numeric_owner) 
+                
+            
+            safe_extract(data_file, cache_data_dir_path.as_posix())
 
         # remove deb and data file
         cache_deb_path.unlink()
